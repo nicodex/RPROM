@@ -3,16 +3,16 @@
 import png
 import sys
 
-ASM_FILENAME = 'header.i'
-IMG_FILENAME = 'header.png'
-IMG_WIDTH = 7 * 16
-IMG_HEIGHT = 37
+ASM_FILENAME = 'choice.i'
+IMG_FILENAME = 'choice.png'
+IMG_WIDTH = (2 * 16) * 3
+IMG_HEIGHT = 32 * (7 // 3 + 4)
 ocs_to_rgb = lambda c : tuple(((c >> i) & 0x0F) * 0x11 for i in (8, 4, 0))
 IMG_PALETTE = (
   (*ocs_to_rgb(0x033), 0x00), # screen background
-  (*ocs_to_rgb(0x002), 0xFF), # cursor edge / PCB chip (black)
-  (*ocs_to_rgb(0x286), 0xFF), # cursor fill / PCB mask (green)
-  (*ocs_to_rgb(0xCCC), 0xFF)) # cursor glow / PCB silk (white)
+  (*ocs_to_rgb(0x002), 0xFF), # slot chip (black) / active option (white)
+  (*ocs_to_rgb(0x256), 0xFF), # screen background / selected slot (bluey)
+  (*ocs_to_rgb(0xCCC), 0xFF)) # chip pins, slot/choice frame/text (light)
 # PNG chunk 'tRNS' = 0 : '0000000174524E530040E6D866'
 
 width, height, pixels, metadata = png.Reader(filename=IMG_FILENAME).read()
