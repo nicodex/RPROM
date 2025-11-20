@@ -1,0 +1,16 @@
+version = 1
+
+[[annotations]]
+path = [
+ ".gitignore",
+ "Makefile",
+ "README.md",
+ "bootmenu.asm",
+ "images/choice.png",
+ "images/choice.py",
+ "images/header.png",
+ "images/header.py",
+]
+SPDX-FileCopyrightText = "2025 Nico Bendlin <nico@nicode.net>"
+SPDX-License-Identifier = "0BSD"
+
