@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "protocol.h"
+#include "rprom/version.h"
 
 // Pins 0..15 are 16 bit data bus
 // Pins 16..33 are 18 bit address bus
@@ -23,10 +24,6 @@
 
 #define DATA_MASK ((1 << 16) - 1)
 #define ADDR_MASK ((1 << 18) - 1)
-
-#define MAJOR_VERSION 1
-#define MINOR_VERSION 0
-#define PATCH_VERSION 1
 
 #define ROM_SLOT_SIZE (512 * 1024)
 
@@ -120,9 +117,9 @@ static void handle_magic_read(uint32_t address)
             *status = (struct StatusV1) {
                 .magic = STATUS_V1_MAGIC,
                 .status_length = sizeof(struct StatusV1),
-                .major_version = MAJOR_VERSION,
-                .minor_version = MINOR_VERSION,
-                .patch_version = PATCH_VERSION,
+                .major_version = RPROM_VERSION_MAJOR,
+                .minor_version = RPROM_VERSION_MINOR,
+                .patch_version = RPROM_VERSION_PATCH,
                 .flash_size_mb = 4,
                 .active_rom_slot = (uint8_t)get_active_rom_slot(),
             };

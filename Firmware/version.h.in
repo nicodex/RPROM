@@ -1,0 +1,13 @@
+#ifndef RPROM_VERSION_H
+#define RPROM_VERSION_H
+
+#define RPROM_VERSION_MAJOR @rprom_project_VERSION_MAJOR@
+#define RPROM_VERSION_MINOR @rprom_project_VERSION_MINOR@
+#define RPROM_VERSION_PATCH @rprom_project_VERSION_PATCH@
+#if (RPROM_VERSION_MAJOR > 0)
+#define RPROM_VERSION "@rprom_project_VERSION@"
+#else
+#define RPROM_VERSION "?.?.?"
+#endif
+
+#endif
