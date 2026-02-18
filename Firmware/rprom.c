@@ -3,31 +3,24 @@
  *
  * Copyright (C) 2025 Niklas Ekström
  */
+#include "pico/multicore.h"
 #include "hardware/clocks.h"
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
 
-#include "pico/flash.h"
-#include "pico/multicore.h"
+#include "firmware/version.h"
+#include "protocol.h"
+#include "rprom.pio.h"
 
 #include <string.h>
 
-#include "protocol.h"
-#include "rprom/version.h"
-
-// Pins 0..15 are 16 bit data bus
-// Pins 16..33 are 18 bit address bus
-#define BYTE_PIN    34
-#define CE_PIN      35
-#define OE_PIN      36
-#define RESET_PIN   37
-
-#define DATA_MASK ((1 << 16) - 1)
-#define ADDR_MASK ((1 << 18) - 1)
+#define DATA_MASK ((1 << RPROM_DATA_PIN_BITS) - 1)
+#define ADDR_MASK ((1 << RPROM_ADDR_PIN_BITS) - 1)
 
 #define ROM_SLOT_SIZE (512 * 1024)
 
 __attribute__((section(".rom_image")))
+__attribute__((aligned(ROM_SLOT_SIZE)))
 static uint16_t rom_image[ROM_SLOT_SIZE / 2];
 
 #define CONFIG_SECTOR_OFFSET    (ROM_SLOT_SIZE - FLASH_SECTOR_SIZE)
@@ -117,9 +110,9 @@ static void handle_magic_read(uint32_t address)
             *status = (struct StatusV1) {
                 .magic = STATUS_V1_MAGIC,
                 .status_length = sizeof(struct StatusV1),
-                .major_version = RPROM_VERSION_MAJOR,
-                .minor_version = RPROM_VERSION_MINOR,
-                .patch_version = RPROM_VERSION_PATCH,
+                .major_version = RPROM_FIRMWARE_VERSION_MAJOR,
+                .minor_version = RPROM_FIRMWARE_VERSION_MINOR,
+                .patch_version = RPROM_FIRMWARE_VERSION_PATCH,
                 .flash_size_mb = 4,
                 .active_rom_slot = (uint8_t)get_active_rom_slot(),
             };
@@ -209,32 +202,32 @@ static void __not_in_flash_func(core0_main)(bool rev6)
     {
         uint64_t all_pins = gpio_get_all64();
 
-        if ((all_pins & (1ULL << OE_PIN)) == 0)
+        if ((all_pins & (1ULL << RPROM_OE_PIN)) == 0)
         {
             uint32_t address;
             if (rev6)
             {
-                address = (all_pins >> 16) & ADDR_MASK;
+                address = (all_pins >> RPROM_ADDR_PIN_BASE) & ADDR_MASK;
             }
             else
             {
-                address = (all_pins >> 16) & ((1 << 17) - 1);
-                address |= (all_pins >> (BYTE_PIN - 17)) & (1 << 17);
+                address = (all_pins >> RPROM_ADDR_PIN_BASE) & ((1 << 17) - 1);
+                address |= (all_pins >> (RPROM_BYTE_PIN - 17)) & (1 << 17);
             }
 
             uint32_t value = (uint32_t)__builtin_bswap16(rom_image[address]);
 
-            gpio_put_masked(DATA_MASK, value);
-            gpio_set_dir_out_masked(DATA_MASK);
+            gpio_put_masked(DATA_MASK << RPROM_DATA_PIN_BASE, value << RPROM_DATA_PIN_BASE);
+            gpio_set_dir_out_masked(DATA_MASK << RPROM_DATA_PIN_BASE);
 
             multicore_fifo_push_non_blocking_inline(address);
 
-            while (gpio_get(OE_PIN) == 0)
+            while (gpio_get(RPROM_OE_PIN) == 0)
             {
                 tight_loop_contents();
             }
 
-            gpio_set_dir_in_masked(DATA_MASK);
+            gpio_set_dir_in_masked(DATA_MASK << RPROM_DATA_PIN_BASE);
         }
     }
 }
@@ -248,14 +241,14 @@ void __not_in_flash_func(main)()
     for (uint i = 0; i < 40; i++)
         gpio_set_function(i, GPIO_FUNC_SIO);
 
-    gpio_pull_down(BYTE_PIN);
+    gpio_pull_down(RPROM_BYTE_PIN);
 
     const uint32_t rom_slot = get_active_rom_slot();
     const uint32_t rom_slot_base = XIP_BASE + rom_slot * ROM_SLOT_SIZE;
     memcpy(rom_image, (const void *)rom_slot_base, sizeof(rom_image));
 
-    bool rev6 = gpio_get(BYTE_PIN);
-    gpio_disable_pulls(BYTE_PIN);
+    bool rev6 = gpio_get(RPROM_BYTE_PIN);
+    gpio_disable_pulls(RPROM_BYTE_PIN);
 
     multicore_launch_core1(core1_main);
 
