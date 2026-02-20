@@ -5,8 +5,10 @@
  */
 #include "pico/multicore.h"
 #include "hardware/clocks.h"
+#include "hardware/dma.h"
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
+#include "hardware/sync.h"
 
 #include "firmware/version.h"
 #include "protocol.h"
@@ -14,8 +16,8 @@
 
 #include <string.h>
 
-#define DATA_MASK ((1 << RPROM_DATA_PIN_BITS) - 1)
-#define ADDR_MASK ((1 << RPROM_ADDR_PIN_BITS) - 1)
+#define DATA_MASK ((1 << RPROM_DATA_PIN_COUNT) - 1)
+#define ADDR_MASK ((1 << RPROM_ADDR_PIN_COUNT) - 1)
 
 #define ROM_SLOT_SIZE (512 * 1024)
 
@@ -234,23 +236,26 @@ static void __not_in_flash_func(core0_main)(bool rev6)
 
 void __not_in_flash_func(main)()
 {
-    set_sys_clock_khz(200000, false);
+    set_sys_clock_khz(200000, false);  // 5ns
 
-    gpio_set_dir_in_masked64((1ULL << 40) - 1ULL);
+    gpio_set_dir_in_masked64(
+        (1ull << RPROM_BYTE_PIN) |
+        (1ull << RPROM_RESET_PIN));
+    gpio_set_function(RPROM_BYTE_PIN, GPIO_FUNC_SIO);
+    gpio_set_function(RPROM_RESET_PIN, GPIO_FUNC_SIO);
+    //FIXME: gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_Xxx);
 
-    for (uint i = 0; i < 40; i++)
-        gpio_set_function(i, GPIO_FUNC_SIO);
+    //TODO: assert RESET
 
-    gpio_pull_down(RPROM_BYTE_PIN);
+    addr_data_program_init(rom_image);
+    //FIXME: selected slot
+    //TODO: copy with DMA
+    memcpy(rom_image, (void const *)XIP_BASE, sizeof(rom_image));
 
-    const uint32_t rom_slot = get_active_rom_slot();
-    const uint32_t rom_slot_base = XIP_BASE + rom_slot * ROM_SLOT_SIZE;
-    memcpy(rom_image, (const void *)rom_slot_base, sizeof(rom_image));
+    //TODO: detach RESET
 
-    bool rev6 = gpio_get(RPROM_BYTE_PIN);
-    gpio_disable_pulls(RPROM_BYTE_PIN);
-
-    multicore_launch_core1(core1_main);
-
-    core0_main(rev6);
+    //TODO: capture read addresses for protocol
+    for(;;) {
+        __wfi();
+    }
 }

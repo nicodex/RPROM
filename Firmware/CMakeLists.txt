@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17...3.27)
 
 set(PICO_BOARD none)
 set(PICO_PLATFORM rp2350)
-set(PICO_FLASH_SIZE_BYTES 4194304)
+set(PICO_FLASH_SIZE_BYTES 4194304) # W25Q32 / ZD25WQ32
 set(PICO_RP2350_A2_SUPPORTED 1)
 include(pico_sdk_import.cmake)
 
@@ -33,7 +33,7 @@ pico_set_linker_script(rprom ${CMAKE_CURRENT_LIST_DIR}/rprom.ld)
 
 target_compile_definitions(rprom
   PRIVATE
-    PICO_RP2350A=0
+    PICO_RP2350A=0 # RP2350B
     PICO_BOOT_STAGE2_CHOOSE_W25Q080=1
     PICO_FLASH_SPI_CLKDIV=2
     PICO_RP2350_A2_SUPPORTED=1
@@ -41,6 +41,8 @@ target_compile_definitions(rprom
     PICO_CORE1_STACK_SIZE=3072
     PICO_STACK_SIZE=1024
     PICO_TIME_DEFAULT_ALARM_POOL_DISABLED=1
+    PICO_MINIMAL_STORED_VECTOR_TABLE=1
+    PICO_NUM_IRQ_HANDLERS=46 # RP2350 SPARE_IRQ_0
 )
 
 target_include_directories(rprom
