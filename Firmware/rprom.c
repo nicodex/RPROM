@@ -250,7 +250,7 @@ void __not_in_flash_func(main)()
     addr_data_program_init(rom_image);
     //FIXME: selected slot
     //TODO: copy with DMA
-    memcpy(rom_image, (void const *)XIP_BASE, sizeof(rom_image));
+    memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
 
     //TODO: detach RESET
 
