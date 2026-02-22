@@ -38,12 +38,12 @@
     pull block ; (uintptr_t)rom_base >> (RPROM_ADDR_PIN_COUNT + 1)
     mov x, osr
 .wrap_target
-    in x, (32 - (RPROM_ADDR_PIN_COUNT + 1))       ; addr_hi >> isr
 wait_oe: ; input sync, see PROC_IN_SYNC_BYPASS(_HI) [+2]
     wait 0 jmppin + (RPROM_OE_PIN - RPROM_CE_PIN) ; [+3] wait /OE
     jmp pin, wait_oe                              ; [+4] test /CE
     in pins, RPROM_ADDR_PIN_COUNT                 ; [+5] pins >> isr
-    push noblock                                  ; [+6] isr >> rx
+    in x, (32 - (RPROM_ADDR_PIN_COUNT + 1))       ; [+6] addr_hi >> isr
+    push noblock                                  ; [+7] isr >> rx
     ; addr_pio.rx >> addr_dma >> data_dma >> data_pio.tx
     wait 1 jmppin + (RPROM_OE_PIN - RPROM_CE_PIN) ; [-3] wait OE
     irq prev nowait 0                             ; [-4] data_pio.irq0
@@ -130,12 +130,11 @@ static inline void addr_data_program_init(void *rom_base) {
     // addr_pio.rx >> data_dma.read_addr
     dma_channel_claim(addr_dma);
     {
-        uint const channel = RPROM_ADDR_DMA_CHANNEL;
-        dma_channel_config_t c = dma_channel_get_default_config(channel);
+        dma_channel_config_t c = dma_channel_get_default_config(addr_dma);
         channel_config_set_read_increment(&c, false);
         channel_config_set_dreq(&c, pio_get_dreq(addr_pio, addr_pio_sm, false));
         channel_config_set_high_priority(&c, true);
-        dma_channel_configure(channel, &c,
+        dma_channel_configure(addr_dma, &c,
             &dma_channel_hw_addr(data_dma)->al3_read_addr_trig,
             &addr_pio->rxf[addr_pio_sm],
             1, true);
