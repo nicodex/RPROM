@@ -35,18 +35,21 @@
 .program addr_pio
 .origin RPROM_ADDR_PIO_SM_OFFSET
 .in 32 right auto 32
-    pull block ; (uintptr_t)rom_base >> (RPROM_ADDR_PIN_COUNT + 1)
-    mov x, osr
+    ; wait for addr_hi (rom_base >> (RPROM_ADDR_PIN_COUNT + 1))
+    pull block
 .wrap_target
+    mov x, osr
     in null, 1                                    ; addr_a0
 wait_oe: ; input sync, see PROC_IN_SYNC_BYPASS(_HI) [+2]
-    wait 0 jmppin + (RPROM_OE_PIN - RPROM_CE_PIN) ; [+3] wait /OE
+    wait 0 gpio RPROM_OE_PIN                      ; [+3] wait /OE
     jmp pin, wait_oe                              ; [+4] test /CE
     in pins, RPROM_ADDR_PIN_COUNT                 ; [+5] pins >> isr
     in x, (32 - (RPROM_ADDR_PIN_COUNT + 1))       ; [+6] addr_hi >> isr >> auto rx
     ; addr_pio.rx >> addr_dma >> data_dma >> data_pio.tx
-    wait 1 jmppin + (RPROM_OE_PIN - RPROM_CE_PIN) ; [-3] wait OE
+    wait 1 gpio RPROM_OE_PIN                      ; [-3] wait OE
     irq prev nowait 0                             ; [-4] data_pio.irq0
+    ; read new addr_hi (empty = move osr, x)
+    pull noblock
 .wrap
 
 % c-sdk {
