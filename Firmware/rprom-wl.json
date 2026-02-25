@@ -1,0 +1,16 @@
+{
+    "$schema": "https://raw.githubusercontent.com/raspberrypi/picotool/refs/tags/2.2.0/json/schemas/whitelabel-schema.json",
+    "scsi": {
+        "vendor": "Niklas",
+        "product": "RPROM",
+        "version": "R1"
+    },
+    "volume": {
+        "label": "RPROM-R1",
+        "redirect_url": "https://github.com/niklasekstrom/RPROM/",
+        "redirect_name": "RPROM repository",
+        "model": "RPROM-R1",
+        "board_id": "RPROM"
+    }
+}
+
