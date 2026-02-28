@@ -77,36 +77,38 @@ static inline void addr_data_program_init(void *rom_base) {
     uint const addr_pio_pc = RPROM_ADDR_PIO_SM_OFFSET;
     uint const addr_dma = RPROM_ADDR_DMA_CHANNEL;
     // PIO pin setup (not RPROM_BYTE_PIN and RPROM_RESET_PIN)
-    for(uint pin = RPROM_DATA_PIN_BASE;
-        pin < RPROM_DATA_PIN_BASE + RPROM_DATA_PIN_COUNT; ++pin) {
-        pio_gpio_init(data_pio, pin);
-        gpio_set_dir(pin, GPIO_IN);  // detached, changed by data_pio
-        //FIXME: gpio_set_drive_strength(pin, GPIO_DRIVE_STRENGTH_Xxx);
-    }
-    for(uint pin = RPROM_ADDR_PIN_BASE;
-        pin < RPROM_ADDR_PIN_BASE + RPROM_ADDR_PIN_COUNT; ++pin) {
-        pio_gpio_init(addr_pio, pin);
-        gpio_set_dir(pin, GPIO_IN);
-        gpio_pull_down(pin);
-    }
-    for(uint pin = RPROM_CE_PIN; pin <= RPROM_OE_PIN; ++pin) {
-        pio_gpio_init(addr_pio, pin);
-        gpio_set_dir(pin, GPIO_IN);
-    }
-    // detach, data_pio.tx >> pins, output, wait OE
     pio_sm_claim(data_pio, data_pio_sm);
     (void)pio_set_gpio_base(data_pio, RPROM_DATA_PIO_GPIO_BASE);
+    for (uint pin = 0; pin < RPROM_DATA_PIN_COUNT; ++pin)
+    {
+        uint const gpio = RPROM_DATA_PIN_BASE + pin;
+        pio_gpio_init(data_pio, gpio);
+        gpio_set_dir(gpio, GPIO_IN);  // detached, set by data_pio
+        gpio_set_pulls(gpio, true, true);  // bus keeper mode
+    }
+    pio_sm_claim(addr_pio, addr_pio_sm);
+    (void)pio_set_gpio_base(addr_pio, RPROM_ADDR_PIO_GPIO_BASE);
+    for (uint pin = 0; pin < RPROM_ADDR_PIN_COUNT; ++pin)
+    {
+        uint const gpio = RPROM_ADDR_PIN_BASE + pin;
+        pio_gpio_init(addr_pio, gpio);
+        gpio_set_dir(gpio, GPIO_IN);
+        gpio_set_pulls(gpio, true, true);  // bus keeper mode
+    }
+    for (uint gpio = RPROM_CE_PIN; gpio <= RPROM_OE_PIN; ++gpio) {
+        pio_gpio_init(addr_pio, gpio);
+        gpio_set_dir(gpio, GPIO_IN);
+        gpio_set_pulls(gpio, true, true);  // bus keeper mode
+    }
+    // detach, data_pio.tx >> pins, output, wait OE
     (void)pio_add_program_at_offset(data_pio, &data_pio_program, data_pio_pc);
     {
         pio_sm_config c = data_pio_program_get_default_config(data_pio_pc);
         sm_config_set_out_pins(&c, RPROM_DATA_PIN_BASE, RPROM_DATA_PIN_COUNT);
-        sm_config_set_out_special(&c, true, false, 0);
         (void)pio_sm_init(data_pio, data_pio_sm, data_pio_pc, &c);
     }
     pio_sm_set_enabled(data_pio, data_pio_sm, true);
     // wait /OE, test /CE, pins >> addr_pio.rx wait OE
-    pio_sm_claim(addr_pio, addr_pio_sm);
-    (void)pio_set_gpio_base(addr_pio, RPROM_ADDR_PIO_GPIO_BASE);
     (void)pio_add_program_at_offset(addr_pio, &addr_pio_program, addr_pio_pc);
     {
         pio_sm_config c = addr_pio_program_get_default_config(addr_pio_pc);
