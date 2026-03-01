@@ -85,6 +85,7 @@ static inline void addr_data_program_init(void *rom_base) {
         pio_gpio_init(data_pio, gpio);
         gpio_set_dir(gpio, GPIO_IN);  // detached, set by data_pio
         gpio_set_pulls(gpio, true, true);  // bus keeper mode
+        gpio_set_input_hysteresis_enabled(gpio, true);
     }
     pio_sm_claim(addr_pio, addr_pio_sm);
     (void)pio_set_gpio_base(addr_pio, RPROM_ADDR_PIO_GPIO_BASE);
@@ -94,11 +95,13 @@ static inline void addr_data_program_init(void *rom_base) {
         pio_gpio_init(addr_pio, gpio);
         gpio_set_dir(gpio, GPIO_IN);
         gpio_set_pulls(gpio, true, true);  // bus keeper mode
+        gpio_set_input_hysteresis_enabled(gpio, true);
     }
     for (uint gpio = RPROM_CE_PIN; gpio <= RPROM_OE_PIN; ++gpio) {
         pio_gpio_init(addr_pio, gpio);
         gpio_set_dir(gpio, GPIO_IN);
         gpio_set_pulls(gpio, true, true);  // bus keeper mode
+        gpio_set_input_hysteresis_enabled(gpio, true);
     }
     // detach, data_pio.tx >> pins, output, wait OE
     (void)pio_add_program_at_offset(data_pio, &data_pio_program, data_pio_pc);
