@@ -238,23 +238,18 @@ void __not_in_flash_func(main)()
 {
     set_sys_clock_khz(200000, false);  // 5ns
 
-    gpio_set_dir_in_masked64(
-        (1ull << RPROM_BYTE_PIN) |
-        (1ull << RPROM_RESET_PIN));
+    gpio_set_dir_in_masked64(0ull
+        | (1ull << RPROM_BYTE_PIN)
+//      | (1ull << RPROM_RESET_PIN)
+        );
     gpio_set_function(RPROM_BYTE_PIN, GPIO_FUNC_SIO);
-    gpio_set_function(RPROM_RESET_PIN, GPIO_FUNC_SIO);
-    //FIXME: gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_Xxx);
-
-    //TODO: assert RESET
+//  gpio_set_function(RPROM_RESET_PIN, GPIO_FUNC_SIO);
+//  gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_12MA);
 
     addr_data_program_init(rom_image);
-    //FIXME: selected slot
-    //TODO: copy with DMA
+    //FIXME: test always slot 1
     memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
 
-    //TODO: detach RESET
-
-    //TODO: capture read addresses for protocol
     for(;;) {
         __wfi();
     }
