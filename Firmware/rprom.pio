@@ -21,10 +21,10 @@
 .origin data_pio_pc
 .out 16 right auto 16 ; RPROM_DATA_PIN_COUNT
 .wrap_target
-    mov pindirs, null                             ; detach
-    out pins, 16                                  ; auto tx >> pins
-    mov pindirs, ~null                            ; output
-    wait 1 irq, 0                                 ; wait OE
+    mov pindirs, null               ; detach
+    out pins, 16                    ; auto tx >> pins
+    mov pindirs, ~null              ; output
+    wait 1 irq, 0                   ; wait OE
 .wrap
 
 .program addr_pio
@@ -35,15 +35,15 @@
     pull block               side 1
 .wrap_target
     mov x, osr               side 0
-    in null, 1               side 0               ; addr_a0
-wait_oe: ; input sync, see PROC_IN_SYNC_BYPASS(_HI)
-    wait 0 gpio rprom_oe_pin side 1               ; wait /OE
-    jmp pin, wait_oe         side 0               ; test /CE
-    in pins, 18              side 0               ; pins >> isr
-    in x, (32 - (18 + 1))    side 0               ; addr_hi >> isr >> auto rx
+    in null, 1               side 0 ; addr_a0
+wait_oe: ; input sync, see PIO_INPUT_SYNC_BYPASS
+    wait 0 gpio rprom_oe_pin side 1 ; wait /OE
+    jmp pin, wait_oe         side 0 ; test /CE
+    in pins, 18              side 0 ; pins >> isr
+    in x, (32 - (18 + 1))    side 0 ; addr_hi >> isr >> auto rx
     ; addr_pio.rx >> addr_dma >> data_dma >> data_pio.tx
-    wait 1 gpio rprom_oe_pin side 1               ; wait OE
-    irq prev nowait 0        side 0               ; data_pio.irq0
+    wait 1 gpio rprom_oe_pin side 1 ; wait OE
+    irq prev nowait 0        side 0 ; data_pio.irq0
     ; read new addr_hi (empty = move osr, x)
     pull noblock             side 0
 .wrap
@@ -115,6 +115,8 @@ static inline void addr_data_program_init(void *rom_base) {
         gpio_set_dir(RPROM_RESET_PIN, GPIO_OUT);
         gpio_pull_down(RPROM_RESET_PIN);
         sm_config_set_sideset_pin_base(&c, RPROM_RESET_PIN);
+        hw_set_bits(&addr_pio->input_sync_bypass,
+            1u << (RPROM_RESET_PIN - addr_pio_base));
 
         (void)pio_sm_init(addr_pio, addr_pio_sm, addr_pio_pc, &c);
     }
