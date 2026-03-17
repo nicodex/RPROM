@@ -7,7 +7,7 @@ RPROM_FIRMWARE_VERSION_PATCH	EQU	@rprom_firmware_VERSION_PATCH@
 
 RPROM_FIRMWARE_VERSION	MACRO
 	IFGT	RPROM_FIRMWARE_VERSION_MAJOR
-		dc.b	'@rprom_project_VERSION@'
+		dc.b	'@rprom_firmware_VERSION@'
 	ELSE
 		dc.b	'?.?.?'
 	ENDC
