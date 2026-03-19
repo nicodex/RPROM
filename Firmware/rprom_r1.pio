@@ -57,7 +57,9 @@ wait_oe: ; input sync, see PIO_INPUT_SYNC_BYPASS
 %}
 % c-sdk {
 
+#ifndef RPROM_NO_PIO_DMA
 #include "hardware/dma.h"
+#endif
 #include "hardware/gpio.h"
 
 %}
@@ -95,6 +97,12 @@ static inline void addr_data_program_init(void *rom_base) {
         gpio_set_pulls(gpio, true, true);  // bus keeper mode
         gpio_set_input_hysteresis_enabled(gpio, true);
     }
+    { // debug RPROM_RESET_PIN
+        uint const gpio = RPROM_RESET_PIN;
+        pio_gpio_init(addr_pio, gpio);
+        gpio_set_dir(gpio, GPIO_OUT);
+        gpio_pull_down(RPROM_RESET_PIN);
+    }
     // detach, data_pio.tx >> pins, output, wait OE
     (void)pio_add_program_at_offset(data_pio, &data_pio_program, data_pio_pc);
     {
@@ -111,16 +119,12 @@ static inline void addr_data_program_init(void *rom_base) {
         sm_config_set_jmp_pin(&c, RPROM_CE_PIN);
 
         // debug RPROM_RESET_PIN
-        pio_gpio_init(addr_pio, RPROM_RESET_PIN);
-        gpio_set_dir(RPROM_RESET_PIN, GPIO_OUT);
-        gpio_pull_down(RPROM_RESET_PIN);
         sm_config_set_sideset_pin_base(&c, RPROM_RESET_PIN);
-        hw_set_bits(&addr_pio->input_sync_bypass,
-            1u << (RPROM_RESET_PIN - addr_pio_base));
 
         (void)pio_sm_init(addr_pio, addr_pio_sm, addr_pio_pc, &c);
     }
     pio_sm_set_enabled(addr_pio, addr_pio_sm, true);
+#ifndef RPROM_NO_PIO_DMA
     // bswap16(*data_dma.read_addr) >> data_pio.tx, chain addr_dma
     dma_channel_claim(data_dma);
     {
@@ -148,6 +152,7 @@ static inline void addr_data_program_init(void *rom_base) {
             &addr_pio->rxf[addr_pio_sm],
             1, true);
     }
+#endif
     // start: push ROM address high bits
     pio_sm_put_blocking(addr_pio, addr_pio_sm,
         (uintptr_t)rom_base >> (RPROM_ADDR_PIN_COUNT + 1));

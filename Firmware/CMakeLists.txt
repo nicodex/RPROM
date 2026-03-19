@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.17...3.27)
 
+if(NOT RPROM_TARGET)
+  set(RPROM_TARGET rprom_r1)
+endif()
+
+set(PICO_BOARD ${RPROM_TARGET})
 set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/boards)
-set(PICO_BOARD rprom_r1)
 include(pico_sdk_import.cmake)
 
 project(rprom_firmware
@@ -17,18 +21,18 @@ pico_sdk_init()
 configure_file(version.h.in generated/firmware/version.h @ONLY)
 configure_file(version.i.in generated/firmware/version.i @ONLY)
 
-add_executable(rprom
+add_executable(${RPROM_TARGET}
   rprom.c
   protocol.h
   ${CMAKE_CURRENT_BINARY_DIR}/generated/firmware/version.h
 )
 
-pico_add_extra_outputs(rprom)
-pico_enable_stdio_uart(rprom 0)
-pico_enable_stdio_usb(rprom 0)
-pico_generate_pio_header(rprom ${CMAKE_CURRENT_LIST_DIR}/rprom.pio)
-pico_set_linker_script(rprom ${CMAKE_CURRENT_LIST_DIR}/rprom.ld)
-target_compile_definitions(rprom
+pico_add_extra_outputs(${RPROM_TARGET})
+pico_enable_stdio_uart(${RPROM_TARGET} 0)
+pico_enable_stdio_usb(${RPROM_TARGET} 0)
+pico_set_linker_script(${RPROM_TARGET} ${CMAKE_CURRENT_LIST_DIR}/rprom.ld)
+pico_generate_pio_header(${RPROM_TARGET} ${CMAKE_CURRENT_LIST_DIR}/${RPROM_TARGET}.pio)
+target_compile_definitions(${RPROM_TARGET}
   PRIVATE
     PICO_HEAP_SIZE=0
     PICO_CORE1_STACK_SIZE=3072
@@ -39,12 +43,12 @@ target_compile_definitions(rprom
     PICO_CLOCK_ADJUST_PERI_CLOCK_WITH_SYS_CLOCK=1
 )
 
-target_include_directories(rprom
+target_include_directories(${RPROM_TARGET}
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
-target_link_libraries(rprom
+target_link_libraries(${RPROM_TARGET}
   PRIVATE
     pico_stdlib
     pico_multicore
@@ -52,3 +56,5 @@ target_link_libraries(rprom
     hardware_flash
     hardware_pio
 )
+
+unset(RPROM_TARGET CACHE)

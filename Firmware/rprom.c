@@ -12,7 +12,9 @@
 
 #include "firmware/version.h"
 #include "protocol.h"
-#include "rprom.pio.h"
+#ifdef RPROM_R1
+#include "rprom_r1.pio.h"
+#endif
 
 #include <string.h>
 
@@ -250,7 +252,22 @@ void __not_in_flash_func(main)()
     //FIXME: test always slot 1
     memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
 
-    for(;;) {
+    while(true) {
+#ifndef RPROM_NO_PIO_DMA
         __wfi();
+#else
+        // !pio_sm_is_rx_fifo_empty(PIO_INSTANCE(addr_pio_inst), addr_pio_sm)
+        // replaced with: !(is there any TX or RX in any SM of the whole PIO)
+        // multiple/unrolled checks because cbnz can only do forward branches
+        if (!PIO_INSTANCE(addr_pio_inst)->flevel &&
+            !PIO_INSTANCE(addr_pio_inst)->flevel /* && ... */) {
+            continue;
+            }
+        uintptr_t const addr = pio_sm_get(PIO_INSTANCE(addr_pio_inst), addr_pio_sm);
+        uint16_t const data = __builtin_bswap16(*(uint16_t *)addr);
+        // pio_sm_put(PIO_INSTANCE(addr_pio_inst), addr_pio_sm, data);
+        // RP2350 Datasheet - 2.1.5. Narrow IO register writes
+        *(io_wo_16 *)(&PIO_INSTANCE(data_pio_inst)->txf[data_pio_sm]) = data;
+#endif
     }
 }
