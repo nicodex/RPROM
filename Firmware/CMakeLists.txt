@@ -41,6 +41,7 @@ target_compile_definitions(${RPROM_TARGET}
     PICO_MINIMAL_STORED_VECTOR_TABLE=1
     PICO_NUM_IRQ_HANDLERS=46 # RP2350 SPARE_IRQ_0
     PICO_CLOCK_ADJUST_PERI_CLOCK_WITH_SYS_CLOCK=1
+    RPROM_PIO_DMA # comment out for RPROM_PIO_CPU
 )
 
 target_include_directories(${RPROM_TARGET}

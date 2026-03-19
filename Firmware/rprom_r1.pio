@@ -30,22 +30,21 @@
 .program addr_pio
 .origin addr_pio_pc
 .in 32 right auto 32
-.side_set 1 ; debug RPROM_RESET_PIN
     ; wait for addr_hi (rom_base >> (RPROM_ADDR_PIN_COUNT + 1))
-    pull block               side 1
+    pull block
 .wrap_target
-    mov x, osr               side 0
-    in null, 1               side 0 ; addr_a0
+    mov x, osr
+    in null, 1               ; addr_a0
 wait_oe: ; input sync, see PIO_INPUT_SYNC_BYPASS
-    wait 0 gpio rprom_oe_pin side 1 ; wait /OE
-    jmp pin, wait_oe         side 0 ; test /CE
-    in pins, 18              side 0 ; pins >> isr
-    in x, (32 - (18 + 1))    side 0 ; addr_hi >> isr >> auto rx
-    ; addr_pio.rx >> addr_dma >> data_dma >> data_pio.tx
-    wait 1 gpio rprom_oe_pin side 1 ; wait OE
-    irq prev nowait 0        side 0 ; data_pio.irq0
+    wait 0 gpio rprom_oe_pin ; wait /OE
+    jmp pin, wait_oe         ; test /CE
+    in pins, 18              ; pins >> isr
+    in x, (32 - (18 + 1))    ; addr_hi >> isr >> auto rx
+    ; addr_pio.rx >> data_pio.tx (DMA or CPU)
+    wait 1 gpio rprom_oe_pin ; wait OE
+    irq prev nowait 0        ; data_pio.irq0
     ; read new addr_hi (empty = move osr, x)
-    pull noblock             side 0
+    pull noblock
 .wrap
 
 % c-sdk {
@@ -70,7 +69,7 @@ static inline void addr_data_program_init(void *rom_base) {
     static_assert(rprom_reset_pin == RPROM_RESET_PIN, "");
     PIO const data_pio = PIO_INSTANCE(data_pio_inst);
     PIO const addr_pio = PIO_INSTANCE(addr_pio_inst);
-    // PIO pin setup (not RPROM_BYTE_PIN, debug RPROM_RESET_PIN)
+    // PIO pin setup (not RPROM_BYTE_PIN/RPROM_RESET_PIN)
     pio_sm_claim(data_pio, data_pio_sm);
     (void)pio_set_gpio_base(data_pio, data_pio_base);
     for (uint pin = 0; pin < RPROM_DATA_PIN_COUNT; ++pin)
@@ -97,12 +96,6 @@ static inline void addr_data_program_init(void *rom_base) {
         gpio_set_pulls(gpio, true, true);  // bus keeper mode
         gpio_set_input_hysteresis_enabled(gpio, true);
     }
-    { // debug RPROM_RESET_PIN
-        uint const gpio = RPROM_RESET_PIN;
-        pio_gpio_init(addr_pio, gpio);
-        gpio_set_dir(gpio, GPIO_OUT);
-        gpio_pull_down(RPROM_RESET_PIN);
-    }
     // detach, data_pio.tx >> pins, output, wait OE
     (void)pio_add_program_at_offset(data_pio, &data_pio_program, data_pio_pc);
     {
@@ -117,14 +110,10 @@ static inline void addr_data_program_init(void *rom_base) {
         pio_sm_config c = addr_pio_program_get_default_config(addr_pio_pc);
         sm_config_set_in_pins(&c, RPROM_ADDR_PIN_BASE);
         sm_config_set_jmp_pin(&c, RPROM_CE_PIN);
-
-        // debug RPROM_RESET_PIN
-        sm_config_set_sideset_pin_base(&c, RPROM_RESET_PIN);
-
         (void)pio_sm_init(addr_pio, addr_pio_sm, addr_pio_pc, &c);
     }
     pio_sm_set_enabled(addr_pio, addr_pio_sm, true);
-#ifndef RPROM_NO_PIO_DMA
+#ifdef RPROM_PIO_DMA
     // bswap16(*data_dma.read_addr) >> data_pio.tx, chain addr_dma
     dma_channel_claim(data_dma);
     {
@@ -134,11 +123,12 @@ static inline void addr_data_program_init(void *rom_base) {
         channel_config_set_chain_to(&c, addr_dma);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
         channel_config_set_bswap(&c, true);
-        channel_config_set_high_priority(&c,true);
+        channel_config_set_high_priority(&c, true);
         dma_channel_configure(data_dma, &c,
             &data_pio->txf[data_pio_sm],
             rom_base, // changed by addr_dma
-            1, false);
+            dma_encode_transfer_count(1),
+            false);
     }
     // addr_pio.rx >> data_dma.read_addr
     dma_channel_claim(addr_dma);
@@ -150,7 +140,8 @@ static inline void addr_data_program_init(void *rom_base) {
         dma_channel_configure(addr_dma, &c,
             &dma_channel_hw_addr(data_dma)->al3_read_addr_trig,
             &addr_pio->rxf[addr_pio_sm],
-            1, true);
+            dma_encode_transfer_count(1),
+            true);
     }
 #endif
     // start: push ROM address high bits

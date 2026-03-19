@@ -8,6 +8,7 @@
 #include "hardware/dma.h"
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
+#include "hardware/structs/busctrl.h"
 #include "hardware/sync.h"
 
 #include "firmware/version.h"
@@ -162,112 +163,80 @@ static void handle_magic_read(uint32_t address)
 
 static void __not_in_flash_func(core1_main)()
 {
-    uint32_t magic_counter = 0;
-
-    while (1)
+    // stress the system by permanently copying from XIP/flash to SRAM
+    uint const dma = NUM_DMA_CHANNELS - 1;
+    volatile void * const write_addr = rom_image;
+    const volatile void * const read_addr = (const volatile void *)(XIP_BASE + ROM_SLOT_SIZE);
+    uint32_t const encoded_transfer_count = dma_encode_transfer_count(ROM_SLOT_SIZE / 2);
+    dma_channel_claim(dma);
     {
-        uint32_t address = multicore_fifo_pop_blocking_inline();
-
-        if (magic_counter == 0)
-        {
-            if (address == MAGIC_ADDR_0)
-                magic_counter++;
-        }
-        else if (magic_counter == 1)
-        {
-            if (address == MAGIC_ADDR_1)
-                magic_counter++;
-            else
-                magic_counter = 0;
-        }
-        else if (magic_counter == 2)
-        {
-            if (address == MAGIC_ADDR_2)
-                magic_counter++;
-            else
-                magic_counter = 0;
-        }
-        else
-        {
-            handle_magic_read(address);
-            magic_counter = 0;
-        }
+        dma_channel_config_t c = dma_channel_get_default_config(dma);
+        channel_config_set_write_increment(&c, true);
+        channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
+        channel_config_set_enable(&c, true);
+        dma_channel_configure(dma, &c, write_addr,read_addr, encoded_transfer_count, true);
+    }
+    while (true) {
+        dma_channel_wait_for_finish_blocking(dma);
+        dma_channel_set_write_addr(dma, write_addr, false);
+        dma_channel_set_read_addr(dma, read_addr, false);
+        dma_channel_set_transfer_count(dma, encoded_transfer_count, true);
     }
 }
 
-static inline void multicore_fifo_push_non_blocking_inline(uint32_t data) {
-    sio_hw->fifo_wr = data;
-    __sev();
-}
-
-static void __not_in_flash_func(core0_main)(bool rev6)
+static void __not_in_flash_func(core0_main)()
 {
-    while (1)
-    {
-        uint64_t all_pins = gpio_get_all64();
-
-        if ((all_pins & (1ULL << RPROM_OE_PIN)) == 0)
-        {
-            uint32_t address;
-            if (rev6)
-            {
-                address = (all_pins >> RPROM_ADDR_PIN_BASE) & ADDR_MASK;
-            }
-            else
-            {
-                address = (all_pins >> RPROM_ADDR_PIN_BASE) & ((1 << 17) - 1);
-                address |= (all_pins >> (RPROM_BYTE_PIN - 17)) & (1 << 17);
-            }
-
-            uint32_t value = (uint32_t)__builtin_bswap16(rom_image[address]);
-
-            gpio_put_masked(DATA_MASK << RPROM_DATA_PIN_BASE, value << RPROM_DATA_PIN_BASE);
-            gpio_set_dir_out_masked(DATA_MASK << RPROM_DATA_PIN_BASE);
-
-            multicore_fifo_push_non_blocking_inline(address);
-
-            while (gpio_get(RPROM_OE_PIN) == 0)
-            {
-                tight_loop_contents();
-            }
-
-            gpio_set_dir_in_masked(DATA_MASK << RPROM_DATA_PIN_BASE);
-        }
+#ifdef RPROM_PIO_DMA
+    while (true) {
+        __wfi();
     }
+#else
+    busctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC0_BITS;
+    PIO const data_pio = PIO_INSTANCE(data_pio_inst);
+    PIO const addr_pio = PIO_INSTANCE(addr_pio_inst);
+    while (!pio_sm_is_tx_fifo_empty(addr_pio, addr_pio_sm))
+        tight_loop_contents();
+    while(true) {
+        // if (!pio_sm_is_rx_fifo_empty(addr_pio, addr_pio_sm)) continue;
+        // replaced with: !(is there any TX or RX in any SM of the whole PIO)
+        // multiple/unrolled checks because cbnz can only do forward branches
+        if (!addr_pio->flevel
+            && !addr_pio->flevel && !addr_pio->flevel && !addr_pio->flevel
+            && !addr_pio->flevel && !addr_pio->flevel && !addr_pio->flevel
+            && !addr_pio->flevel && !addr_pio->flevel && !addr_pio->flevel
+            ) {
+            continue;
+        }
+        uintptr_t const addr = pio_sm_get(addr_pio, addr_pio_sm);
+        uint16_t const data = __builtin_bswap16(*(uint16_t *)addr);
+        // pio_sm_put(data_pio, data_pio_sm, data);
+        // RP2350 Datasheet - 2.1.5. Narrow IO register writes
+        *(io_wo_16 *)(&data_pio->txf[data_pio_sm]) = data;
+    }
+#endif
 }
 
 void __not_in_flash_func(main)()
 {
+    // Be careful with system clock and flash access speed
+    // (if PICO_CLOCK_ADJUST_PERI_CLOCK_WITH_SYS_CLOCK set
+    // W25Q32RVXH sck <= 133HMz, ZD25WQ32CE sck <= 104MHz)
     set_sys_clock_khz(200000, false);  // 5ns
 
-    gpio_set_dir_in_masked64(0ull
-        | (1ull << RPROM_BYTE_PIN)
-//      | (1ull << RPROM_RESET_PIN)
-        );
+    gpio_set_dir_in_masked64(
+        (1ull << RPROM_BYTE_PIN) |
+        (1ull << RPROM_RESET_PIN) |
+        0ull);
     gpio_set_function(RPROM_BYTE_PIN, GPIO_FUNC_SIO);
-//  gpio_set_function(RPROM_RESET_PIN, GPIO_FUNC_SIO);
-//  gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_set_pulls(RPROM_BYTE_PIN, true, true);  // bus keeper mode
+    gpio_set_function(RPROM_RESET_PIN, GPIO_FUNC_SIO);
+    gpio_set_pulls(RPROM_RESET_PIN, true, true);  // bus keeper mode
+    gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_12MA);
 
     addr_data_program_init(rom_image);
     //FIXME: test always slot 1
     memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
 
-    while(true) {
-#ifndef RPROM_NO_PIO_DMA
-        __wfi();
-#else
-        // !pio_sm_is_rx_fifo_empty(PIO_INSTANCE(addr_pio_inst), addr_pio_sm)
-        // replaced with: !(is there any TX or RX in any SM of the whole PIO)
-        // multiple/unrolled checks because cbnz can only do forward branches
-        if (!PIO_INSTANCE(addr_pio_inst)->flevel &&
-            !PIO_INSTANCE(addr_pio_inst)->flevel /* && ... */) {
-            continue;
-            }
-        uintptr_t const addr = pio_sm_get(PIO_INSTANCE(addr_pio_inst), addr_pio_sm);
-        uint16_t const data = __builtin_bswap16(*(uint16_t *)addr);
-        // pio_sm_put(PIO_INSTANCE(addr_pio_inst), addr_pio_sm, data);
-        // RP2350 Datasheet - 2.1.5. Narrow IO register writes
-        *(io_wo_16 *)(&PIO_INSTANCE(data_pio_inst)->txf[data_pio_sm]) = data;
-#endif
-    }
+    multicore_launch_core1(core1_main);
+    core0_main();
 }
