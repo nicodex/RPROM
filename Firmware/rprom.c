@@ -164,54 +164,35 @@ static void handle_magic_read(uint32_t address)
 
 static void __not_in_flash_func(core1_main)()
 {
+#ifndef RPROM_PIO_DMA
+    // PIO CPU rx/tx requires high priority for cpu0 (over DMA and cpu1)
+    busctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC0_BITS;
+    while (!busctrl_hw->priority_ack) tight_loop_contents();
+#endif
     // stress the system by permanently copying from XIP/flash to SRAM
-#ifdef RPROM_PIO_DMA
-    // PIO DMA rx/tx would be blocked by other DMA (even if not high priority)
-    // but, the auxiliary XIP streaming DMA does not conflict with PIO DMAs...
+    uint const dma = NUM_DMA_CHANNELS - 1;
+    volatile void * const write_addr = rom_image;
+    const volatile void * const read_addr = (const volatile void *)(XIP_BASE + ROM_SLOT_SIZE);
+    uint const transfer_count = sizeof(rom_image) / sizeof(uint32_t);
+    dma_channel_claim(dma);
     while (true) {
+        // PIO DMA rx/tx would be blocked by other DMA (even if not high priority)
+        // but, the auxiliary XIP streaming DMA does not conflict with PIO DMAs...
         while (!(xip_ctrl_hw->stat & XIP_STAT_FIFO_EMPTY))
             (void)xip_ctrl_hw->stream_fifo;
-        xip_ctrl_hw->stream_addr = XIP_BASE + ROM_SLOT_SIZE;
-        xip_ctrl_hw->stream_ctr = ROM_SLOT_SIZE / 4;
-        uint const dma = NUM_DMA_CHANNELS - 1;
-        dma_channel_claim(dma);
+        xip_ctrl_hw->stream_addr = (uintptr_t)read_addr;
+        xip_ctrl_hw->stream_ctr = transfer_count;
         dma_channel_config c = dma_channel_get_default_config(dma);
         channel_config_set_read_increment(&c, false);
         channel_config_set_write_increment(&c, true);
         channel_config_set_dreq(&c, DREQ_XIP_STREAM);
         dma_channel_configure(dma, &c,
-            rom_image,
-            (const void *)XIP_AUX_BASE,
-            dma_encode_transfer_count(ROM_SLOT_SIZE / 4),
-            true);
-        dma_channel_wait_for_finish_blocking(dma);
-    }
-#else
-    // PIO CPU rx/tx requires high priority for cpu0 (over DMA and cpu1)
-    busctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC0_BITS;
-    while (!busctrl_hw->priority_ack) tight_loop_contents();
-    uint const dma = NUM_DMA_CHANNELS - 1;
-    volatile void * const write_addr = rom_image;
-    const volatile void * const read_addr = (const volatile void *)(XIP_BASE + ROM_SLOT_SIZE);
-    uint32_t const encoded_transfer_count = dma_encode_transfer_count(ROM_SLOT_SIZE / 2);
-    dma_channel_claim(dma);
-    {
-        dma_channel_config_t c = dma_channel_get_default_config(dma);
-        channel_config_set_write_increment(&c, true);
-        channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
-        dma_channel_configure(dma, &c,
             write_addr,
-            read_addr,
-            encoded_transfer_count,
+            (const void *)XIP_AUX_BASE,
+            dma_encode_transfer_count(transfer_count),
             true);
-    }
-    while (true) {
         dma_channel_wait_for_finish_blocking(dma);
-        dma_channel_set_write_addr(dma, write_addr, false);
-        dma_channel_set_read_addr(dma, read_addr, false);
-        dma_channel_set_transfer_count(dma, encoded_transfer_count, true);
     }
-#endif
 }
 
 static void __not_in_flash_func(core0_main)()
