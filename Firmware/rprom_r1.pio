@@ -1,6 +1,5 @@
 ; keep in sync with boards/rprom_r1.h
 .define public rprom_oe_pin 36
-.define public rprom_reset_pin 37
 
 .define public data_pio_inst 0
 .define public data_pio_base 0
@@ -66,7 +65,6 @@ wait_oe: ; input sync, see PIO_INPUT_SYNC_BYPASS
 
 static inline void addr_data_program_init(void *rom_base) {
     static_assert(rprom_oe_pin == RPROM_OE_PIN, "");
-    static_assert(rprom_reset_pin == RPROM_RESET_PIN, "");
     PIO const data_pio = PIO_INSTANCE(data_pio_inst);
     PIO const addr_pio = PIO_INSTANCE(addr_pio_inst);
     // PIO pin setup (not RPROM_BYTE_PIN/RPROM_RESET_PIN)
@@ -119,7 +117,7 @@ static inline void addr_data_program_init(void *rom_base) {
     {
         dma_channel_config_t c = dma_channel_get_default_config(data_dma);
         channel_config_set_read_increment(&c, false);
-        channel_config_set_dreq(&c, pio_get_dreq(data_pio, data_pio_sm,true));
+        channel_config_set_dreq(&c, pio_get_dreq(data_pio, data_pio_sm, true));
         channel_config_set_chain_to(&c, addr_dma);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
         channel_config_set_bswap(&c, true);
