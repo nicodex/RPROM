@@ -9,6 +9,7 @@
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
 #include "hardware/structs/busctrl.h"
+#include "hardware/structs/xip_ctrl.h"
 #include "hardware/sync.h"
 
 #include "firmware/version.h"
@@ -166,8 +167,24 @@ static void __not_in_flash_func(core1_main)()
     // stress the system by permanently copying from XIP/flash to SRAM
 #ifdef RPROM_PIO_DMA
     // PIO DMA rx/tx would be blocked by other DMA (even if not high priority)
+    // but, the auxiliary XIP streaming DMA does not conflict with PIO DMAs...
     while (true) {
-        memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
+        while (!(xip_ctrl_hw->stat & XIP_STAT_FIFO_EMPTY))
+            (void)xip_ctrl_hw->stream_fifo;
+        xip_ctrl_hw->stream_addr = XIP_BASE + ROM_SLOT_SIZE;
+        xip_ctrl_hw->stream_ctr = ROM_SLOT_SIZE / 4;
+        uint const dma = NUM_DMA_CHANNELS - 1;
+        dma_channel_claim(dma);
+        dma_channel_config c = dma_channel_get_default_config(dma);
+        channel_config_set_read_increment(&c, false);
+        channel_config_set_write_increment(&c, true);
+        channel_config_set_dreq(&c, DREQ_XIP_STREAM);
+        dma_channel_configure(dma, &c,
+            rom_image,
+            (const void *)XIP_AUX_BASE,
+            dma_encode_transfer_count(ROM_SLOT_SIZE / 4),
+            true);
+        dma_channel_wait_for_finish_blocking(dma);
     }
 #else
     // PIO CPU rx/tx requires high priority for cpu0 (over DMA and cpu1)
@@ -182,7 +199,6 @@ static void __not_in_flash_func(core1_main)()
         dma_channel_config_t c = dma_channel_get_default_config(dma);
         channel_config_set_write_increment(&c, true);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
-        channel_config_set_enable(&c, true);
         dma_channel_configure(dma, &c,
             write_addr,
             read_addr,
