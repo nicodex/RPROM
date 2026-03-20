@@ -163,24 +163,10 @@ static void handle_magic_read(uint32_t address)
 
 static void __not_in_flash_func(core1_main)()
 {
-    // stress the system by permanently copying from XIP/flash to SRAM
-    uint const dma = NUM_DMA_CHANNELS - 1;
-    volatile void * const write_addr = rom_image;
-    const volatile void * const read_addr = (const volatile void *)(XIP_BASE + ROM_SLOT_SIZE);
-    uint32_t const encoded_transfer_count = dma_encode_transfer_count(ROM_SLOT_SIZE / 2);
-    dma_channel_claim(dma);
-    {
-        dma_channel_config_t c = dma_channel_get_default_config(dma);
-        channel_config_set_write_increment(&c, true);
-        channel_config_set_transfer_data_size(&c, DMA_SIZE_16);
-        channel_config_set_enable(&c, true);
-        dma_channel_configure(dma, &c, write_addr,read_addr, encoded_transfer_count, true);
-    }
     while (true) {
-        dma_channel_wait_for_finish_blocking(dma);
-        dma_channel_set_write_addr(dma, write_addr, false);
-        dma_channel_set_read_addr(dma, read_addr, false);
-        dma_channel_set_transfer_count(dma, encoded_transfer_count, true);
+        // Permanently stress the system with slot #1 copy from flash to SRAM
+        // to test priorities - FIXME: tried DMA copy here, but did not work.
+        memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
     }
 }
 
