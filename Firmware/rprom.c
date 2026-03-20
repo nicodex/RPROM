@@ -9,7 +9,8 @@
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
 #include "hardware/structs/busctrl.h"
-#include "hardware/structs/xip_ctrl.h"
+#include "hardware/structs/xip.h"
+#include "hardware/structs/xip_aux.h"
 #include "hardware/sync.h"
 
 #include "firmware/version.h"
@@ -162,6 +163,25 @@ static void handle_magic_read(uint32_t address)
     }
 }
 
+static void __not_in_flash_func(slot_transfer_from_flash_now)(uint slot_nr)
+{
+    // PIO DMA rx/tx would be blocked by other DMA (even if not high priority)
+    // but, the auxiliary XIP streaming DMA does not conflict with PIO DMAs...
+    uint const channel = NUM_DMA_CHANNELS - 1;
+    while (!(xip_ctrl_hw->stat & XIP_STAT_FIFO_EMPTY_BITS))
+        (void)xip_ctrl_hw->stream_fifo;
+    xip_ctrl_hw->stream_addr = XIP_BASE + (slot_nr * ROM_SLOT_SIZE);
+    xip_ctrl_hw->stream_ctr = ROM_SLOT_SIZE / 4;
+    dma_channel_config config = dma_channel_get_default_config(channel);
+    channel_config_set_read_increment(&config, false);
+    channel_config_set_write_increment(&config, true);
+    channel_config_set_dreq(&config, DREQ_XIP_STREAM);
+    dma_channel_configure(channel, &config, rom_image,
+        (const void *)(XIP_AUX_BASE + XIP_AUX_STREAM_OFFSET),
+        dma_encode_transfer_count(ROM_SLOT_SIZE / 4), true);
+    dma_channel_wait_for_finish_blocking(channel);
+}
+
 static void __not_in_flash_func(core1_main)()
 {
 #ifndef RPROM_PIO_DMA
@@ -170,30 +190,10 @@ static void __not_in_flash_func(core1_main)()
     while (!busctrl_hw->priority_ack) tight_loop_contents();
 #endif
     // stress the system by permanently copying from XIP/flash to SRAM
-    uint const dma = NUM_DMA_CHANNELS - 1;
-    volatile void * const write_addr = rom_image;
-    const volatile void * const read_addr = (const volatile void *)(XIP_BASE + ROM_SLOT_SIZE);
-    uint const transfer_count = sizeof(rom_image) / sizeof(uint32_t);
-    dma_channel_claim(dma);
     while (true) {
-        // PIO DMA rx/tx would be blocked by other DMA (even if not high priority)
-        // but, the auxiliary XIP streaming DMA does not conflict with PIO DMAs...
-        while (!(xip_ctrl_hw->stat & XIP_STAT_FIFO_EMPTY))
-            (void)xip_ctrl_hw->stream_fifo;
-        xip_ctrl_hw->stream_addr = (uintptr_t)read_addr;
-        xip_ctrl_hw->stream_ctr = transfer_count;
-        dma_channel_config c = dma_channel_get_default_config(dma);
-        channel_config_set_read_increment(&c, false);
-        channel_config_set_write_increment(&c, true);
-        channel_config_set_dreq(&c, DREQ_XIP_STREAM);
-        dma_channel_configure(dma, &c,
-            write_addr,
-            (const void *)XIP_AUX_BASE,
-            dma_encode_transfer_count(transfer_count),
-            true);
-        dma_channel_wait_for_finish_blocking(dma);
+        slot_transfer_from_flash_now(1);
     }
-}
+ }
 
 static void __not_in_flash_func(core0_main)()
 {
@@ -244,8 +244,7 @@ void __not_in_flash_func(main)()
     gpio_set_drive_strength(RPROM_RESET_PIN, GPIO_DRIVE_STRENGTH_12MA);
 
     addr_data_program_init(rom_image);
-    //FIXME: test always slot 1
-    memcpy(rom_image, (void const *)(XIP_BASE + ROM_SLOT_SIZE), sizeof(rom_image));
+    slot_transfer_from_flash_now(1); //FIXME: test always slot 1
 
     multicore_launch_core1(core1_main);
     core0_main();
