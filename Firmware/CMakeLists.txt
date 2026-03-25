@@ -53,6 +53,7 @@ target_link_libraries(${RPROM_TARGET}
   PRIVATE
     pico_stdlib
     pico_multicore
+    pico_unique_id
     hardware_dma
     hardware_flash
     hardware_pio

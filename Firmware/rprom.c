@@ -4,6 +4,7 @@
  * Copyright (C) 2025 Niklas Ekström
  */
 #include "pico/multicore.h"
+#include "pico/unique_id.h"
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/flash.h"
@@ -15,9 +16,7 @@
 
 #include "firmware/version.h"
 #include "protocol.h"
-#ifdef RPROM_R1
 #include "rprom_r1.pio.h"
-#endif
 
 #include <string.h>
 
@@ -224,6 +223,29 @@ static void __not_in_flash_func(core0_main)()
         *(io_wo_16 *)(&data_pio->txf[data_pio_sm]) = data;
     }
 #endif
+}
+
+// Should be the same as the USB FAT partition UUID
+// (generated from the OTP or flash serial number):
+//  $ picotool info -d \
+//  | sed -n -e 's/^.*chipid:.*0x\(.*\)$/RPROM_SERIAL=\1/p'
+//  RPROM_SERIAL=87ad2282b1a22463
+//  $ printf 'RPROM_UUID=%08x\n' \
+//    "$((0x87ad2282 * 31 + 0xb1a22463 & 0xffffffff))"
+//  RPROM_UUID=1f995221
+//  $ udevadm info --query=property \
+//    --property=ID_USB_SERIAL_SHORT,ID_FS_UUID \
+//    --name=/dev/sdb1
+//  ID_USB_SERIAL_SHORT=87AD2282B1A22463
+//  ID_FS_UUID=1F99-5221
+static uint32_t __not_in_flash_func(get_serial_number32)()
+{
+    struct chip_id_t {
+        uint32_t public_rand_id[2];
+    } chip_id;
+    static_assert(sizeof(chip_id) == sizeof(pico_unique_board_id_t), "");
+    pico_get_unique_board_id((pico_unique_board_id_t *)&chip_id);
+    return chip_id.public_rand_id[1] * 31 + chip_id.public_rand_id[0];
 }
 
 void __not_in_flash_func(main)()
