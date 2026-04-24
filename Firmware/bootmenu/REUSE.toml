@@ -1,0 +1,22 @@
+version = 1
+
+[[annotations]]
+path = [
+ "images/cursor.png",
+ "images/cursor.py",
+ "images/header.png",
+ "images/header.py",
+ "images/slotbkgd.png",
+ "images/slotbkgd.py",
+ "images/slotnmbr.png",
+ "images/slotnmbr.py",
+ "images/sprite.py",
+ "research/hposdump-c520.md",
+ "research/hposdump-c520.zip",
+ "research/hposdump-pal-lores-c520.png",
+ "research/hposdump-pal-lores-wuae.png",
+ ".gitignore"
+]
+SPDX-FileCopyrightText = "2026 Nico Bendlin <nico@nicode.net>"
+SPDX-License-Identifier = "0BSD"
+
