@@ -1,0 +1,12 @@
+/*
+!/.gitignore
+!/*.asm
+!/*.h
+!/*.i
+!/*.md
+!/LICENSES/
+!/Makefile
+!/REUSE.toml
+!/images/*.png
+!/images/*.py
+!/research/
