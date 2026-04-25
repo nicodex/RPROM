@@ -11,6 +11,8 @@ path = [
  "images/slotnmbr.png",
  "images/slotnmbr.py",
  "images/sprite.py",
+ "images/xtradisk.png",
+ "images/xtradisk.py",
  "research/hposdump-c520.md",
  "research/hposdump-c520.zip",
  "research/hposdump-pal-lores-c520.png",
