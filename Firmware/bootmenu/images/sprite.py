@@ -18,7 +18,7 @@ def load_image(filename, width, height, palette):
   except ValueError:
     # most likely the image editor/writer/optimizer replaced RGB0 with 0000
     # pngcrush -rem tRNS -c 3 -noreduce -speed -force sprite.png sprite_.png
-    # pngcrush -trns 0 0 85 170 0 -c 3 -brute -force sprite_.png sprite.png
+    # pngcrush -trns 0 170 170 170 0 -c 3 -brute -force sprite_.png sprite.png
     sys.exit(f'{filename:s}: image palette color missmatch')
   DEPTH = int(math.ceil(math.log2(len(palette))))
   WORDS = (width + 15) // 16

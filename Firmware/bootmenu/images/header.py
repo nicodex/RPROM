@@ -15,12 +15,11 @@ if __name__ == '__main__':
     else:
       IMG_FILENAME = os.path.join(os.path.dirname(sys.argv[0]), IMG_FILENAME)
 
-data = load_image(IMG_FILENAME, 112, 37 - 6, ( # top 6 rows repeated at the end
-  (*ocs_to_rgb(0x05A), 0x00), # screen back (trans)
-  (*ocs_to_rgb(0x002), 0xFF), # chip / cursor frame
-  (*ocs_to_rgb(0x286), 0xFF), # board / cursor fill
-  (*ocs_to_rgb(0xCCC), 0xFF)) # silk / cursor light
-  )
+data = load_image(IMG_FILENAME, 112, 37 - 6, (
+  (*ocs_to_rgb(0xAAA), 0x00),
+  (*ocs_to_rgb(0x000), 0xFF),
+  (*ocs_to_rgb(0x175), 0xFF),
+  (*ocs_to_rgb(0xCCC), 0xFF)))
 
 #TODO: patch firmware version string into the header image
 
@@ -28,7 +27,7 @@ code = ''
 for y, r in enumerate(data):
   code += '\t\tdc.w   \t'
   code += ','.join(f'${d:04X}' for w in r for d in w)
-  code += f' ; {y:2d}\n'
+  code += f' ; {y:2d}{f',{y + 37 - 6:d}' if y < 6 else '':s}\n'
 
 with open(ASM_FILENAME, 'w', encoding='ascii') as file:
   file.write(code)

@@ -16,11 +16,10 @@ if __name__ == '__main__':
       IMG_FILENAME = os.path.join(os.path.dirname(sys.argv[0]), IMG_FILENAME)
 
 data = load_image(IMG_FILENAME, 32, 32, (
-  (*ocs_to_rgb(0x05A), 0x00), # screen back (trans)
-  (*ocs_to_rgb(0x002), 0xFF), # DIP IC body (black)
-  (*ocs_to_rgb(0x68B), 0xFF), # slot back (focused)
-  (*ocs_to_rgb(0xCCC), 0xFF)) # DIP IC pins / frame
-  )
+  (*ocs_to_rgb(0xAAA), 0x00),
+  (*ocs_to_rgb(0x000), 0xFF),
+  (*ocs_to_rgb(0x68B), 0xFF),
+  (*ocs_to_rgb(0xCCC), 0xFF)))
 
 code = ''
 for y, r in enumerate(data):
