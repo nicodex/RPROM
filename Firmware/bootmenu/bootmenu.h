@@ -45,6 +45,7 @@
 #define RPBM_FWSTATUSF_BUSY (1u << RPBM_FWSTATUSB_BUSY)
 #define RPBM_FWSTATUSB_FAIL (5u+24u) /* DQ5 */
 #define RPBM_FWSTATUSF_FAIL (1u << RPBM_FWSTATUSB_FAIL)
+/* TODO: low word contains current command/param pair */
 
 /*
  * RPROM firmware bootmenu command/data word format:

@@ -43,6 +43,7 @@ RPBM_FWSTATUSB_BUSY	EQU 	7+24 ; DQ7
 RPBM_FWSTATUSF_BUSY	EQU 	(1<<RPBM_FWSTATUSB_BUSY)
 RPBM_FWSTATUSB_FAIL	EQU 	5+24 ; DQ5
 RPBM_FWSTATUSF_FAIL	EQU 	(1<<RPBM_FWSTATUSB_FAIL)
+;TODO: low word contains current command/param pair
 
 ;
 ; RPROM firmware bootmenu command/data word format:
