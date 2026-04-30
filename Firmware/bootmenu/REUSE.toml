@@ -2,6 +2,8 @@ version = 1
 
 [[annotations]]
 path = [
+ "Mockup.png",
+ "README.md",
  "bootmenu.h",
  "bootmenu.i",
  "images/cursor.png",

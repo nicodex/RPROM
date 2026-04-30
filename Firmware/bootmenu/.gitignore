@@ -4,6 +4,7 @@
 !/*.h
 !/*.i
 !/*.md
+!/*.png
 !/LICENSES/
 !/Makefile
 !/REUSE.toml
