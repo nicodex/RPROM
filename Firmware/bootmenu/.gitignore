@@ -1,6 +1,7 @@
 /*
 !/.gitignore
 !/*.asm
+!/*.fs-uae
 !/*.h
 !/*.i
 !/*.md
