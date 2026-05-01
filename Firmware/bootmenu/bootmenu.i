@@ -112,7 +112,8 @@ rpfwi_BootSlot  	EQU 	$09 ;<.b> default boot slot from stored config
 rpfwi_BootConf  	EQU 	$0A ;<.w> see rpbmi_BootConf
 rpfwi_KickSlot  	EQU 	$0C ;<.b> slot loaded in Kickstart SRAM memory
 rpfwi_WorkSlot  	EQU 	$0D ;<.b> current Flash slot (page read/write)
-rpfwi_reserved  	EQU 	$0E ;<.w> reserved/alignment (0)
+rpfwi_reserved  	EQU 	$0E ;<.b> reserved/alignment (zero)
+rpfwi_BoardRev  	EQU 	$0F ;<.b> RPROM hardware revision
 rpfwi_SIZEOF    	EQU 	$10&$FF
 
 ;-----------------------------------------------------------------------------

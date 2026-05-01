@@ -116,7 +116,8 @@ struct FirmwareInfo { /* TODO: move this into protocol header */
   	uint16_t BootConf; /* 0A: see struct BootMenuInfo.BootConf */
   	uint8_t  KickSlot; /* 0C: slot loaded in Kickstart SRAM memory */
   	uint8_t  WorkSlot; /* 0D: current Flash slot (page read/write) */
-  	uint16_t reserved; /* 0E: reserved/alignment (0) */
+  	uint8_t  reserved; /* 0E: reserved/alignment (zero) */
+  	uint8_t  BoardRev; /* 0F: RPROM hardware revision */
 };	                   /* 10: sizeof FirmwareInfo */
 
 /*****************************************************************************
