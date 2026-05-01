@@ -125,8 +125,8 @@ rpfwi_SIZEOF    	EQU 	$10&$FF
 ;
 RPBM_BOOTMENUINFO_PARAM	EQU 	1
 ; struct BootMenuSlotInfo
-rpbmsi_KickInfo	EQU 	$00 ;<.l> ;TODO: compressed Kickstart details
-rpbmsi_ResetPC 	EQU 	$04 ;<.l> VEC_RESETPC value
+rpbmsi_ResetPC 	EQU 	$00 ;<.l> VEC_RESETPC value
+rpbmsi_reserved	EQU 	$04 ;<.l> reserved (zero)
 rpbmsi_SIZEOF  	EQU 	$08
 ; struct BootMenuInfo
 rpbmi_SlotCount	EQU 	$00 ;<.b> 1-31 (4MB = 7 slots)

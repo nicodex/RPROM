@@ -129,8 +129,8 @@ struct FirmwareInfo { /* TODO: move this into protocol header */
  */
 #define RPBM_BOOTMENUINFO_PARAM 1u
 struct BootMenuSlotInfo {
-  	uint32_t KickInfo; /* 00: TODO: compressed Kickstart details */
-  	uint32_t ResetPC;  /* 04: VEC_RESETPC value */
+  	uint32_t ResetPC;  /* 00: VEC_RESETPC value */
+  	uint32_t reserved; /* 04: reserved (zero) */
 };	                   /* 08: sizeof BootMenuSlotInfo */
 struct BootMenuInfo {
   	uint8_t  SlotCount; /* 00: 1-31 (4MB = 7 slots) */
