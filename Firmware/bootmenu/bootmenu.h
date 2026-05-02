@@ -76,45 +76,36 @@
 #define RPBM_FWWORD_PARAM_BITS 11u /* enough to address 2048 pages/slot */
 #define RPBM_FWWORD_PARAM_MASK ((1u << RPBM_FWWORD_PARAM_BITS) - 1u)
 
-/* RPROM firmware bootmenu command IDs (shifted) */
-#define RPBM_CMDID_FIRMWAREINFO (0x0u << RPBM_FWWORD_CMDID_BASE)
+/*
+ * RPROM firmware bootmenu command IDs (shifted)
+ */
+#define RPBM_CMDID_JUMP_TO_KICK (0x0u << RPBM_FWWORD_CMDID_BASE)
 #define RPBM_CMDID_BOOTMENUINFO (0x1u << RPBM_FWWORD_CMDID_BASE)
 #define RPBM_CMDID_SLOT_TO_KICK (0x2u << RPBM_FWWORD_CMDID_BASE)
-#define RPBM_CMDID_JUMP_TO_KICK (0x3u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMDID_FIRMWAREINFO (0x3u << RPBM_FWWORD_CMDID_BASE)
 #define RPBM_CMDID_EXTENDED_CMD (0xFu << RPBM_FWWORD_CMDID_BASE)
 
 /*****************************************************************************
  *
- *	RPBM_CMDID_FIRMWAREINFO
- *	param: reserved (1)
+ *	RPBM_CMDID_JUMP_TO_KICK
+ *	param: reserved (0)
  *
- * The firmware writes a FirmwareInfo struct into the buffer page.
+ * The firmware exits bootmenu mode and switches to Kickstart SRAM memory.
+ * Point of no return -- the bootmenu is responsible to setup/prepare the
+ * system before sending this command, and has to immediately jump to the
+ * Kickstart (jump has to be run from the CPU instruction prefetch queue).
  */
-#define RPBM_FIRMWAREINFO_PARAM 1u
-struct FirmwareInfo { /* TODO: move this into protocol header */
-  	uint32_t Magic;    /* 00: RPFW_FIRMWAREINFO_MAGIC */
-#define RPFW_FIRMWAREINFO_MAGIC 'RPRM'
-  	uint8_t  InfoSize; /* 04: sizeof FirmwareInfo & 0xFF (0 = 256) */
-  	uint8_t  FwMajor;  /* 05: firmware major version (0 = develop) */
-  	uint8_t  FwMinor;  /* 06: firmware minor version */
-  	uint8_t  FwPatch;  /* 07: firmware patch version */
-  	uint8_t  FlashMB;  /* 08: Flash size in MB (4MB = 7 slots) */
-  	uint8_t  BootSlot; /* 09: default boot slot from stored config */
-  	uint16_t BootConf; /* 0A: see struct BootMenuInfo.BootConf */
-  	uint8_t  KickSlot; /* 0C: slot loaded in Kickstart SRAM memory */
-  	uint8_t  WorkSlot; /* 0D: current Flash slot (page read/write) */
-  	uint8_t  reserved; /* 0E: reserved/alignment (zero) */
-  	uint8_t  BoardRev; /* 0F: RPROM hardware revision */
-};	                   /* 10: sizeof FirmwareInfo */
+#define RPBM_JUMP_TO_KICK_PARAM 0u
 
 /*****************************************************************************
  *
  *	RPBM_CMDID_BOOTMENUINFO
- *	param: reserved (1)
+ *	param: reserved (0)
  *
  * The firmware writes a BootMenuInfo struct into the buffer page.
+ * - firmware automatically executes this command after loading
  */
-#define RPBM_BOOTMENUINFO_PARAM 1u
+#define RPBM_BOOTMENUINFO_PARAM 0u
 struct BootMenuSlotInfo {
   	uint32_t ResetPC;  /* 00: VEC_RESETPC value */
   	uint32_t reserved; /* 04: reserved (zero) */
@@ -139,14 +130,26 @@ struct BootMenuInfo {
 
 /*****************************************************************************
  *
- *	RPBM_CMDID_JUMP_TO_KICK
+ *	RPBM_CMDID_FIRMWAREINFO
  *	param: reserved (0)
  *
- * The firmware exits bootmenu mode and switches to Kickstart SRAM memory.
- * Point of no return -- the bootmenu is responsible to setup/prepare the
- * system before sending this command, and has to immediately jump to the
- * Kickstart (jump has to be run from the CPU instruction prefetch queue).
+ * The firmware writes a FirmwareInfo struct into the buffer page.
  */
-#define RPBM_JUMP_TO_KICK_PARAM 0u
+#define RPBM_FIRMWAREINFO_PARAM 0u
+struct FirmwareInfo { /* TODO: move this into protocol header */
+  	uint32_t Magic;    /* 00: RPFW_FIRMWAREINFO_MAGIC */
+#define RPFW_FIRMWAREINFO_MAGIC 'RPRM'
+  	uint8_t  InfoSize; /* 04: sizeof FirmwareInfo & 0xFF (0 = 256) */
+  	uint8_t  FwMajor;  /* 05: firmware major version (0 = develop) */
+  	uint8_t  FwMinor;  /* 06: firmware minor version */
+  	uint8_t  FwPatch;  /* 07: firmware patch version */
+  	uint8_t  FlashMB;  /* 08: Flash size in MB (4MB = 7 slots) */
+  	uint8_t  BootSlot; /* 09: default boot slot from stored config */
+  	uint16_t BootConf; /* 0A: see struct BootMenuInfo.BootConf */
+  	uint8_t  KickSlot; /* 0C: slot loaded in Kickstart SRAM memory */
+  	uint8_t  WorkSlot; /* 0D: current Flash slot (page read/write) */
+  	uint8_t  reserved; /* 0E: reserved/alignment (zero) */
+  	uint8_t  BoardRev; /* 0F: RPROM hardware revision */
+};	                   /* 10: sizeof FirmwareInfo */
 
 #endif /* RPROM_FIRMWARE_BOOTMENU_H */
