@@ -22,8 +22,8 @@ Requirements besides RPROM (16-bit/single-ROM system):
 That's it - even CIA-B, Paula, and RAM aren't accessed
 (odd CIA-A isn't used/required in hover-click builds).
 
-I do not plan on adding keyboard support
-(too many conflicts with other hardware).
+I do not plan on adding keyboard support (too many conflicts with other hardware,
+and writing into any CIA-A register will deassert `/OVL` on Gayle-based systems).
 
 Additional features (planned):
   - NTSC/PAL switch (ECS+)
