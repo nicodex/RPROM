@@ -48,11 +48,11 @@ RPBM_FWSTATUSF_FAIL	EQU 	(1<<RPBM_FWSTATUSB_FAIL)
 ;
 ; RPROM firmware bootmenu command/data word format:
 ;
-;	| data | value                           | ROM address access range |
+;	| data | VALUE                           | ROM address access range |
 ;	| ---: | :------------------------------ | -----------------------: |
 ;	| `=1` | `%FEDCBA9876543210`             |       ($020000, $03FFFE) |
 ;
-;	| data | func | command | param          | ROM address access range |
+;	| data | func |   CMDID | PARAM          | ROM address access range |
 ;	| ---: | :--- |-------: | :------------- | -----------------------: |
 ;	| `=0` | `=1` | `%EDCB` | `%A9876543210` |       ($010000, $01FFFE) |
 ;
@@ -74,23 +74,14 @@ RPBM_FWWORD_CMDID_BASE	EQU 	(RPBM_FWWORDB_FUNC-RPBM_FWWORD_CMDID_BITS)
 RPBM_FWWORD_PARAM_BITS	EQU 	11 ; enough to address 2048 pages/slot
 RPBM_FWWORD_PARAM_MASK	EQU 	((1<<RPBM_FWWORD_PARAM_BITS)-1)
 
-; RPROM firmware bootmenu command IDs
-RPBM_CMDID_FIRMWAREINFO	EQU 	%0000
-RPBM_CMDID_BOOTMENUINFO	EQU 	%0001
-RPBM_CMDID_SLOT_TO_KICK	EQU 	%0010
-RPBM_CMDID_JUMP_TO_KICK	EQU 	%0011
-RPBM_CMDID_RESERVED_04 	EQU 	%0100
-RPBM_CMDID_RESERVED_05 	EQU 	%0101
-RPBM_CMDID_RESERVED_06 	EQU 	%0110
-RPBM_CMDID_RESERVED_07 	EQU 	%0111
-RPBM_CMDID_RESERVED_08 	EQU 	%1000
-RPBM_CMDID_RESERVED_09 	EQU 	%1001
-RPBM_CMDID_RESERVED_10 	EQU 	%1010
-RPBM_CMDID_RESERVED_11 	EQU 	%1011
-RPBM_CMDID_RESERVED_12 	EQU 	%1100
-RPBM_CMDID_RESERVED_13 	EQU 	%1101
-RPBM_CMDID_RESERVED_14 	EQU 	%1110
-RPBM_CMDID_EXTENDED_CMD	EQU 	%1111
+;
+; RPROM firmware bootmenu command IDs (shifted)
+;
+RPBM_CMDID_FIRMWAREINFO	EQU 	($0<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMDID_BOOTMENUINFO	EQU 	($1<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMDID_SLOT_TO_KICK	EQU 	($2<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMDID_JUMP_TO_KICK	EQU 	($3<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMDID_EXTENDED_CMD	EQU 	($F<<RPBM_FWWORD_CMDID_BASE)
 
 ;-----------------------------------------------------------------------------
 ;
@@ -139,10 +130,10 @@ rpbmi_SIZEOF   	EQU 	(31*rpbmsi_SIZEOF+rpbmi_SlotInfo) ; RPBM_PAGE_SIZE
 ;-----------------------------------------------------------------------------
 ;
 ;	RPBM_CMDID_SLOT_TO_KICK
-;	param: <slot_index> (0 = firmware/config)
+;	param: <slot_number> (0 = firmware/config)
 ;
 ; The firmware copies a slot from Flash storage into Kickstart SRAM memory.
-; - firmware sets  rpfwi_KickSlot = <slot_index>
+; - firmware sets  rpfwi_KickSlot = <slot_number>
 ;
 RPBM_FIRMWARE_TO_KICK	EQU 	0 ; including config storage (BootSlot)
 

@@ -50,11 +50,11 @@
 /*
  * RPROM firmware bootmenu command/data word format:
  *
- *	| data | value                             | ROM address access range |
+ *	| data | VALUE                             | ROM address access range |
  *	| ---: | :-------------------------------- | -----------------------: |
  *	| `=1` | `0bFEDCBA9876543210`              |     (0x020000, 0x03FFFE) |
  *
- *	| data | func |  command | param           | ROM address access range |
+ *	| data | func |    CMDID | PARAM           | ROM address access range |
  *	| ---: | :--- |--------: | :-------------- | -----------------------: |
  *	| `=0` | `=1` | `0bEDCB` | `0bA9876543210` |     (0x010000, 0x01FFFE) |
  *
@@ -76,25 +76,12 @@
 #define RPBM_FWWORD_PARAM_BITS 11u /* enough to address 2048 pages/slot */
 #define RPBM_FWWORD_PARAM_MASK ((1u << RPBM_FWWORD_PARAM_BITS) - 1u)
 
-/* RPROM firmware bootmenu command IDs */
-enum BootMenuCmdID {
-	RPBM_CMDID_FIRMWAREINFO, /* 0b0000 */
-	RPBM_CMDID_BOOTMENUINFO, /* 0b0001 */
-	RPBM_CMDID_SLOT_TO_KICK, /* 0b0010 */
-	RPBM_CMDID_JUMP_TO_KICK, /* 0b0011 */
-	RPBM_CMDID_RESERVED_04,  /* 0b0100 */
-	RPBM_CMDID_RESERVED_05,  /* 0b0101 */
-	RPBM_CMDID_RESERVED_06,  /* 0b0110 */
-	RPBM_CMDID_RESERVED_07,  /* 0b0111 */
-	RPBM_CMDID_RESERVED_08,  /* 0b1000 */
-	RPBM_CMDID_RESERVED_09,  /* 0b1001 */
-	RPBM_CMDID_RESERVED_10,  /* 0b1010 */
-	RPBM_CMDID_RESERVED_11,  /* 0b1011 */
-	RPBM_CMDID_RESERVED_12,  /* 0b1100 */
-	RPBM_CMDID_RESERVED_13,  /* 0b1101 */
-	RPBM_CMDID_RESERVED_14,  /* 0b1110 */
-	RPBM_CMDID_EXTENDED_CMD  /* 0b1111 */
-};
+/* RPROM firmware bootmenu command IDs (shifted) */
+#define RPBM_CMDID_FIRMWAREINFO (0x0u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMDID_BOOTMENUINFO (0x1u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMDID_SLOT_TO_KICK (0x2u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMDID_JUMP_TO_KICK (0x3u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMDID_EXTENDED_CMD (0xFu << RPBM_FWWORD_CMDID_BASE)
 
 /*****************************************************************************
  *
@@ -143,10 +130,10 @@ struct BootMenuInfo {
 /*****************************************************************************
  *
  *	RPBM_CMDID_SLOT_TO_KICK
- *	param: <slot_index> (0 = firmware/config)
+ *	param: <slot_number> (0 = firmware/config)
  *
  * The firmware copies a slot from Flash storage into Kickstart SRAM memory.
- * - firmware sets struct FirmwareInfo.KickSlot = <slot_index>
+ * - firmware sets struct FirmwareInfo.KickSlot = <slot_number>
  */
 #define RPBM_FIRMWARE_TO_KICK 0u /* including config storage (BootSlot) */
 
