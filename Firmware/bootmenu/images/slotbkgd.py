@@ -16,10 +16,7 @@ if __name__ == '__main__':
       IMG_FILENAME = os.path.join(os.path.dirname(sys.argv[0]), IMG_FILENAME)
 
 data = load_image(IMG_FILENAME, 32, 32, (
-  (*ocs_to_rgb(0xAAA), 0x00),
-  (*ocs_to_rgb(0x000), 0xFF),
-  (*ocs_to_rgb(0x68B), 0xFF),
-  (*ocs_to_rgb(0xCCC), 0xFF)))
+  ocs_to_rgb(0xAAA), ocs_to_rgb(0x000), ocs_to_rgb(0x68B), ocs_to_rgb(0xFFF)))
 
 code = ''
 for y, r in enumerate(data):

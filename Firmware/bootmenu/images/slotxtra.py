@@ -5,8 +5,8 @@ import sys
 sys.dont_write_bytecode = True
 from sprite import ocs_to_rgb, load_image
 
-ASM_FILENAME = 'xtradisk.i'
-IMG_FILENAME = 'xtradisk.png'
+ASM_FILENAME = 'slotxtra.i'
+IMG_FILENAME = 'slotxtra.png'
 if __name__ == '__main__':
   if len(sys.argv) > 1:
     ASM_FILENAME = sys.argv[1]
@@ -15,16 +15,13 @@ if __name__ == '__main__':
     else:
       IMG_FILENAME = os.path.join(os.path.dirname(sys.argv[0]), IMG_FILENAME)
 
-data = load_image(IMG_FILENAME, 32, 32, (
-  (*ocs_to_rgb(0xAAA), 0x00),
-  (*ocs_to_rgb(0x000), 0xFF),
-  (*ocs_to_rgb(0x135), 0xFF),
-  (*ocs_to_rgb(0xCCC), 0xFF)))
+data = load_image(IMG_FILENAME, 64, 32, (
+  ocs_to_rgb(0xAAA), ocs_to_rgb(0x000), ocs_to_rgb(0x68B), ocs_to_rgb(0xFFF)))
 
 code = ''
 for y, r in enumerate(data):
   code += '\t\tdc.w   \t'
-  code += ','.join(f'%{d:016b}' for w in r for d in w)
+  code += ','.join(f'${d:04X}' for w in r for d in w)
   code += f' ; {y:2d}\n'
 
 with open(ASM_FILENAME, 'w', encoding='ascii') as file:
