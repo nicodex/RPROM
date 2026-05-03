@@ -105,8 +105,8 @@ RPBM_JUMP_TO_KICK_PARAM	EQU 	0
 ;
 RPBM_BOOTMENUINFO_PARAM	EQU 	0
 ; struct BootMenuSlotInfo
-rpbmsi_ResetSP	EQU 	$00 ;<.l> VEC_RESETSP (0)
-rpbmsi_ResetPC	EQU 	$04 ;<.l> VEC_RESETPC (1)
+rpbmsi_ResetPC	EQU 	$00 ;<.l> VEC_RESETPC (1)
+rpbmsi_ResetSP	EQU 	$04 ;<.l> VEC_RESETSP (0)
 rpbmsi_SIZEOF 	EQU 	$08
 ; struct BootMenuInfo
 rpbmi_SlotCount	EQU 	$00 ;<.b> 1-31 (4MB = 7 slots)

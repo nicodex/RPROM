@@ -107,8 +107,8 @@
  */
 #define RPBM_BOOTMENUINFO_PARAM 0u
 struct BootMenuSlotInfo {
-  	uint32_t ResetSP; /* 00: VEC_RESETSP (0) */
-  	uint32_t ResetPC; /* 04: VEC_RESETPC (1) */
+  	uint32_t ResetPC; /* 00: VEC_RESETPC (1) */
+  	uint32_t ResetSP; /* 04: VEC_RESETSP (0) */
 };	                  /* 08: sizeof BootMenuSlotInfo */
 struct BootMenuInfo {
   	uint8_t  SlotCount; /* 00: 1-31 (4MB = 7 slots) */
