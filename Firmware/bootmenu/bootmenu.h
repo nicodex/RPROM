@@ -113,10 +113,22 @@ struct BootMenuSlotInfo {
 struct BootMenuInfo {
   	uint8_t  SlotCount; /* 00: 1-31 (4MB = 7 slots) */
   	uint8_t  BootSlot;  /* 01: see struct FirmwareInfo.BootSlot */
-  	uint16_t BootConf;  /* 02: TODO: bootmenu UI and/or control flags */
+  	uint16_t BootConf;  /* 02: see RPBM_CONFIG* flags */
   	uint32_t SlotValid; /* 04: bit 0 reserved, bit 1-31 slot valid */
   	struct BootMenuSlotInfo SlotInfo[31]; /* 08: (16MB = 31 slots) */
 };	                   /* 100: sizeof BootMenuInfo == RPBM_PAGE_SIZE */
+#define RPBM_CONFIGB_LMB_TEST 0u /* test left mouse button for menu */
+#define RPBM_CONFIGB_LMB_ISUP 1u /* tested LMB state is UP, else DOWN */
+#define RPBM_CONFIGB_RMB_TEST 2u /* test right mouse button for menu */
+#define RPBM_CONFIGB_RMB_ISUP 3u /* tested RMB state is UP, else DOWN */
+#define RPBM_CONFIGB_SET_MODE 4u /* force initial display mode (ECS+) */
+#define RPBM_CONFIGB_MODE_PAL 5u /* the forced mode is PAL, else NTSC */
+#define RPBM_CONFIGF_LMB_TEST (1u << RPBM_CONFIGB_LMB_TEST)
+#define RPBM_CONFIGF_LMB_ISUP (1u << RPBM_CONFIGB_LMB_ISUP)
+#define RPBM_CONFIGF_RMB_TEST (1u << RPBM_CONFIGB_RMB_TEST)
+#define RPBM_CONFIGF_RMB_ISUP (1u << RPBM_CONFIGB_RMB_ISUP)
+#define RPBM_CONFIGF_SET_MODE (1u << RPBM_CONFIGB_SET_MODE)
+#define RPBM_CONFIGF_MODE_PAL (1u << RPBM_CONFIGB_MODE_PAL)
 
 /*****************************************************************************
  *
@@ -138,7 +150,6 @@ struct BootMenuInfo {
 #define RPBM_FIRMWAREINFO_PARAM 0u
 struct FirmwareInfo { /* TODO: move this into protocol header */
   	uint32_t Magic;    /* 00: RPFW_FIRMWAREINFO_MAGIC */
-#define RPFW_FIRMWAREINFO_MAGIC 'RPRM'
   	uint8_t  InfoSize; /* 04: sizeof FirmwareInfo & 0xFF (0 = 256) */
   	uint8_t  FwMajor;  /* 05: firmware major version (0 = develop) */
   	uint8_t  FwMinor;  /* 06: firmware minor version */
@@ -151,5 +162,6 @@ struct FirmwareInfo { /* TODO: move this into protocol header */
   	uint8_t  reserved; /* 0E: reserved/alignment (zero) */
   	uint8_t  BoardRev; /* 0F: RPROM hardware revision */
 };	                   /* 10: sizeof FirmwareInfo */
+#define RPFW_FIRMWAREINFO_MAGIC 'RPRM'
 
 #endif /* RPROM_FIRMWARE_BOOTMENU_H */

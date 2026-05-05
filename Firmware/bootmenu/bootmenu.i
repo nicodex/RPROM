@@ -111,10 +111,22 @@ rpbmsi_SIZEOF 	EQU 	$08
 ; struct BootMenuInfo
 rpbmi_SlotCount	EQU 	$00 ;<.b> 1-31 (4MB = 7 slots)
 rpbmi_BootSlot 	EQU 	$01 ;<.b> see rpfwi_BootSlot
-rpbmi_BootConf 	EQU 	$02 ;<.w> ;TODO: bootmenu UI and/or control flags
+rpbmi_BootConf 	EQU 	$02 ;<.w> see RPBM_CONFIG* flags
 rpbmi_SlotValid	EQU 	$04 ;<.l> bit 0 reserved, bit 1-31 slot valid
 rpbmi_SlotInfo 	EQU 	$08 ; struct BootMenuSlotInfo[31] (16MB = 31 slots)
 rpbmi_SIZEOF   	EQU 	(31*rpbmsi_SIZEOF+rpbmi_SlotInfo) ; RPBM_PAGE_SIZE
+RPBM_CONFIGB_LMB_TEST	EQU 	0 ; test left mouse button for menu
+RPBM_CONFIGB_LMB_ISUP	EQU 	1 ; tested LMB state is UP, else DOWN
+RPBM_CONFIGB_RMB_TEST	EQU 	2 ; test right mouse button for menu
+RPBM_CONFIGB_RMB_ISUP	EQU 	3 ; tested RMB state is UP, else DOWN
+RPBM_CONFIGB_SET_MODE	EQU 	4 ; force initial display mode (ECS+)
+RPBM_CONFIGB_MODE_PAL	EQU 	5 ; the forced mode is PAL, else NTSC
+RPBM_CONFIGF_LMB_TEST	EQU 	(1<<RPBM_CONFIGB_LMB_TEST)
+RPBM_CONFIGF_LMB_ISUP	EQU 	(1<<RPBM_CONFIGB_LMB_ISUP)
+RPBM_CONFIGF_RMB_TEST	EQU 	(1<<RPBM_CONFIGB_RMB_TEST)
+RPBM_CONFIGF_RMB_ISUP	EQU 	(1<<RPBM_CONFIGB_RMB_ISUP)
+RPBM_CONFIGF_SET_MODE	EQU 	(1<<RPBM_CONFIGB_SET_MODE)
+RPBM_CONFIGF_MODE_PAL	EQU 	(1<<RPBM_CONFIGB_MODE_PAL)
 
 ;-----------------------------------------------------------------------------
 ;
@@ -136,7 +148,6 @@ RPBM_FIRMWARE_TO_KICK	EQU 	0 ; including config storage (BootSlot)
 RPBM_FIRMWAREINFO_PARAM	EQU 	0
 ; struct FirmwareInfo ;TODO: move this into protocol header
 rpfwi_Magic     	EQU 	$00 ;<.l> RPFW_FIRMWAREINFO_MAGIC
-RPFW_FIRMWAREINFO_MAGIC	EQU 	'RPRM'
 rpfwi_InfoSize  	EQU 	$04 ;<.b> rpfwi_SIZEOF (0 = 256)
 rpfwi_FwMajor   	EQU 	$05 ;<.b> firmware major version (0 = develop)
 rpfwi_FwMinor   	EQU 	$06 ;<.b> firmware minor version
@@ -149,5 +160,6 @@ rpfwi_WorkSlot  	EQU 	$0D ;<.b> current Flash slot (page read/write)
 rpfwi_reserved  	EQU 	$0E ;<.b> reserved/alignment (zero)
 rpfwi_BoardRev  	EQU 	$0F ;<.b> RPROM hardware revision
 rpfwi_SIZEOF    	EQU 	$10&$FF
+RPFW_FIRMWAREINFO_MAGIC	EQU 	'RPRM'
 
 	ENDC
