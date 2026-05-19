@@ -35,6 +35,41 @@ Note: Support for `F0` ROM emulation requires a modification to the
   thus the old RPROM's "magic read sequence" is not visible there).
 
 
+RPROM 'bootmenu' Kickstart compatibility
+----------------------------------------
+
+The ROM overlay at `00` is not disabled
+and no `RESET` instruction is executed.
+
+The following registers are always touched/trashed
+(even if the active boot slot is automatically loaded):
+  - `D0`/`CCR` = `0`
+  - `A0` = `$F000EE`/`$F800EE` (FwMagic1 + 2)
+  - `A1` = `$F10002`/`$F90002` (RomBase + FUNC + 2)
+  - `A2` = Kickstart VEC_RESETPC / `$F00002` / `A5`
+  - `A4` = `$DFF000` (_custom)
+  - `SSP` = Kickstart VEC_RESETSP (if not DIAG)
+  - `USP` = initial `SSP`
+  - `INTENA` = all interrupts disabled (`$7FFF`)
+  - `INTREQ` = all interrupts cleared (`$7FFF`)
+  - `DMACON` = all channels disabled (`$03FF`)
+  - `BEAMCON0` = NTSC/PAL (`$0000`/`$0020` if mode forced)
+  - `POTGO` = all buttons to output (`$FF01` if RMB test)
+
+The following registers are always touched/reset
+if the graphical user interface is displayed:
+  - `D1`/`D2`/`D3`/`D4`/`A3` = `0`
+  - `FMODE` = `$0000` (if AGA)
+  - `BEAMCON0` = NTSC/PAL (`$0000`/`$0020` if mode switched)
+  - TODO: BPLCON0/BPLCON1/BPLCON2/BPLMOD1
+  - TODO: DDFSTRT/DDFSTOP/DIWSTRT/DIWSTOP
+  - TODO: COLORxx
+  - TODO: SPRxPOS/SPRxCTL/SPRxDATA/SPRxDATB
+  - TODO: BPL1PT
+  - TODO: JOY0DAT
+  - TODO: VPOSR/VHPOSR
+
+
 RPROM `bootmenu` license
 ------------------------
 
