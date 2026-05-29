@@ -11,23 +11,21 @@ Right now, it looks something like this (without PAL letter-boxing):
 ![RPROM bootmenu mockup screen](Mockup.png)
 
 Requirements besides RPROM (16-bit/single-ROM system):
-  - working CPU (any MC680x0 with at least 7MHz)
-  - working address/DMA generator (Agnus, Alice)
-  - working address decoder (Gary, Gayle, Moe)
-  - working video processor (Denise, Lisa)
+  - any MC680x0 with at least 7MHz
+  - any address/DMA generator (Agnus, Alice)
+  - any address decoder (Gary, Gayle, Moe)
+  - any video processor (Denise, Lisa)
   - monitor (connected to chipset graphics)
-  - working odd CIA-A (left mouse button)
   - mouse on first joystick port
-
-That's it - even CIA-B, Paula, and RAM aren't accessed
-(odd CIA-A isn't used/required in hover-click builds).
+  - odd CIA-A (left mouse button state)
+  - Paula for right mouse button checks
 
 I do not plan on adding keyboard support (too many conflicts with other hardware,
 and writing into any CIA-A register will deassert `/OVL` on Gayle-based systems).
 
-Additional features (planned):
-  - NTSC/PAL switch (ECS+)
-  - `F0` ROM support (A570)
+Additional features:
+  - NTSC/PAL switch (on boot or in menu)
+  - `F0` ROM support (CD-ROM drive A570)
 
 Note: Support for `F0` ROM emulation requires a modification to the
   RPROM's general firmware interface, since the address decoders in
@@ -54,20 +52,19 @@ The following registers are always touched/trashed
   - `INTREQ` = all interrupts cleared (`$7FFF`)
   - `DMACON` = all channels disabled (`$03FF`)
   - `BEAMCON0` = NTSC/PAL (`$0000`/`$0020` if mode forced)
+  - `VPOSW` (long fields for 240p/288p if mode forced)
   - `POTGO` = all buttons to output (`$FF01` if RMB test)
+  - internal chipset counters (indirectly via exec time)
 
-The following registers are always touched/reset
+The following registers are also touched/reset
 if the graphical user interface is displayed:
   - `D1`/`D2`/`D3`/`D4`/`A3` = `0`
   - `FMODE` = `$0000` (if AGA)
-  - `BEAMCON0` = NTSC/PAL (`$0000`/`$0020` if mode switched)
-  - TODO: BPLCON0/BPLCON1/BPLCON2/BPLMOD1
-  - TODO: DDFSTRT/DDFSTOP/DIWSTRT/DIWSTOP
-  - TODO: COLORxx
-  - TODO: SPRxPOS/SPRxCTL/SPRxDATA/SPRxDATB
-  - TODO: BPL1PT
-  - TODO: JOY0DAT
-  - TODO: VPOSR/VHPOSR
+  - `BPLCON0`/`BPLCON1`/`BPLCON2`/`BPLMOD1`/`BPL1PT`
+  - `DDFSTRT`/`DDFSTOP`/`DIWSTRT`/`DIWSTOP`
+  - `COLOR00`/`COLOR16`-`COLOR31`
+  - `SPRxPOS`/`SPRxCTL`/`SPRxDATA`/`SPRxDATB`
+  - `JOY0DAT` (indirectly via mouse movement)
 
 
 RPROM `bootmenu` license
@@ -106,8 +103,9 @@ Racing The Beam on an Amiga without RAM has already been done and
 documented in my [cpubltro] project. But this time (different CPU
 generations, clock speeds, and other hardware) we cannot reliably
 fill bitplanes, so we have to use sprites for everything and rely
-on the DMA controller to write a bitplane word (to enable sprites
-for the current scanline in the currently active display window).
+on the DMA controller to write two (minimum) dummy bitplane words
+after the color burst and before the current display window opens
+(enables sprites for this scanline in the active display window).
 However, the end-of-line synchronization has to be rewritten, and
 must include the drawing of the pointer sprite on every scanline.
 
@@ -115,8 +113,8 @@ Worst-case EOL sync and pointer handling (68000@7MHz short line):
 ```
 DMA time slot (Video HPOS): 1111222222222222222233333333333333334/CDDDDDDDDDDDDDDDDEEE
 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0/F0123456789ABCDEF012
-M_M_M_M_d_d_d_a_a_a_a_s_s_s_s_s_s_s_s_s_s_s_s_s_s_s_s___b_______B/_b>>>>___b>>>>___b__
-+_+_+_+_________________________________________________________+/____________________
+M_M_M_M_d_d_d_a_a_a_a_s_s_s_s_s_s_s_s_s_s_s_s_s_B_s_s___B_______b/_b>>>>___b>>>>___b__
++_+_+_+-------------------------==========-----_+_______+________/____________________
 Agnus HPOS (++VPOS at $02): 2222222222222222333333333333333344444/DDDDDDDDDDDDDEEE--00
 456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01234/3456789ABCDEF0120123
 _________________________________________]_TST.B__(Ax)___________/______.r.p__________
