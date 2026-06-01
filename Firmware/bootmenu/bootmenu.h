@@ -34,12 +34,12 @@
 #define RPBM_FWMAGIC1_WORD (RPBM_FWMAGIC1_ADDR >> RPBM_ADDR_SHIFT)
 
 /* RPROM firmware data transfer buffer (second bootmenu page) */
-#define RPBM_FWBUFFER_ADDR 0x000100u /* VEC_USER[0-63] (64*4-127*4) */
+#define RPBM_FWBUFFER_ADDR 0x000100u /* VEC_USER[0-63] */
 #define RPBM_FWBUFFER_WORD (RPBM_FWBUFFER_ADDR >> RPBM_ADDR_SHIFT)
 #define RPBM_FWBUFFER_SIZE RPBM_PAGE_SIZE
 
 /* RPROM firmware command/data transfer status (volatile) */
-#define RPBM_FWSTATUS_ADDR 0x000200u /* VEC_USER[64] (128*4) */
+#define RPBM_FWSTATUS_ADDR 0x000200u /* VEC_USER[64] */
 #define RPBM_FWSTATUS_WORD (RPBM_FWSTATUS_ADDR >> RPBM_ADDR_SHIFT)
 #define RPBM_FWSTATUSB_BUSY (7u+24u) /* DQ7 */
 #define RPBM_FWSTATUSF_BUSY (1u << RPBM_FWSTATUSB_BUSY)
@@ -76,18 +76,9 @@
 #define RPBM_FWWORD_PARAM_BITS 11u /* enough to address 2048 pages/slot */
 #define RPBM_FWWORD_PARAM_MASK ((1u << RPBM_FWWORD_PARAM_BITS) - 1u)
 
-/*
- * RPROM firmware bootmenu command IDs (shifted)
- */
-#define RPBM_CMDID_JUMP_TO_KICK (0x0u << RPBM_FWWORD_CMDID_BASE)
-#define RPBM_CMDID_BOOTMENUINFO (0x1u << RPBM_FWWORD_CMDID_BASE)
-#define RPBM_CMDID_SLOT_TO_KICK (0x2u << RPBM_FWWORD_CMDID_BASE)
-#define RPBM_CMDID_FIRMWAREINFO (0x3u << RPBM_FWWORD_CMDID_BASE)
-#define RPBM_CMDID_EXTENDED_CMD (0xFu << RPBM_FWWORD_CMDID_BASE)
-
-/*****************************************************************************
+/******************************************************************************
  *
- *	RPBM_CMDID_JUMP_TO_KICK
+ *	RPBM_CMDID_JUMP_TO_KICK (0)
  *	param: reserved (0)
  *
  * The firmware exits bootmenu mode and switches to Kickstart SRAM memory.
@@ -95,73 +86,82 @@
  * system before sending this command, and has to immediately jump to the
  * Kickstart (jump has to be run from the CPU instruction prefetch queue).
  */
-#define RPBM_JUMP_TO_KICK_PARAM 0u
+#define RPBM_CMDID_JUMP_TO_KICK (0x0u << RPBM_FWWORD_CMDID_BASE)
 
-/*****************************************************************************
+/******************************************************************************
  *
- *	RPBM_CMDID_BOOTMENUINFO
+ *	RPBM_CMDID_BOOTMENUINFO (1)
  *	param: reserved (0)
  *
  * The firmware writes a BootMenuInfo struct into the buffer page.
  * - firmware automatically executes this command after loading
  */
-#define RPBM_BOOTMENUINFO_PARAM 0u
+#define RPBM_CMDID_BOOTMENUINFO (0x1u << RPBM_FWWORD_CMDID_BASE)
+
 struct BootMenuSlotInfo {
   	uint32_t ResetPC; /* 00: VEC_RESETPC (1) */
   	uint32_t ResetSP; /* 04: VEC_RESETSP (0) */
 };	                  /* 08: sizeof BootMenuSlotInfo */
+
 struct BootMenuInfo {
   	uint8_t  SlotCount; /* 00: 1-31 (4MB = 7 slots) */
   	uint8_t  BootSlot;  /* 01: see struct FirmwareInfo.BootSlot */
-  	uint16_t BootConf;  /* 02: see RPBM_CONFIG* flags */
+  	uint16_t BootConf;  /* 02: see RPBM_CONF* flags */
   	uint32_t SlotValid; /* 04: bit 0 reserved, bit 1-31 slot valid */
   	struct BootMenuSlotInfo SlotInfo[31]; /* 08: (16MB = 31 slots) */
 };	                   /* 100: sizeof BootMenuInfo == RPBM_PAGE_SIZE */
-#define RPBM_CONFIGB_LMB_TEST 0u /* test left mouse button for menu */
-#define RPBM_CONFIGB_LMB_ISUP 1u /* tested LMB state is UP, else DOWN */
-#define RPBM_CONFIGB_RMB_TEST 2u /* test right mouse button for menu */
-#define RPBM_CONFIGB_RMB_ISUP 3u /* tested RMB state is UP, else DOWN */
-#define RPBM_CONFIGB_SET_MODE 4u /* force initial display mode (ECS+) */
-#define RPBM_CONFIGB_MODE_PAL 5u /* the forced mode is PAL, else NTSC */
-#define RPBM_CONFIGF_LMB_TEST (1u << RPBM_CONFIGB_LMB_TEST)
-#define RPBM_CONFIGF_LMB_ISUP (1u << RPBM_CONFIGB_LMB_ISUP)
-#define RPBM_CONFIGF_RMB_TEST (1u << RPBM_CONFIGB_RMB_TEST)
-#define RPBM_CONFIGF_RMB_ISUP (1u << RPBM_CONFIGB_RMB_ISUP)
-#define RPBM_CONFIGF_SET_MODE (1u << RPBM_CONFIGB_SET_MODE)
-#define RPBM_CONFIGF_MODE_PAL (1u << RPBM_CONFIGB_MODE_PAL)
 
-/*****************************************************************************
+/* struct BootMenuInfo.BootConf */
+#define RPBM_CONFB_LMB_TEST 0u /* test left mouse button for menu */
+#define RPBM_CONFB_LMB_ISUP 1u /* tested LMB state is UP, else DOWN */
+#define RPBM_CONFB_RMB_TEST 2u /* test right mouse button for menu */
+#define RPBM_CONFB_RMB_ISUP 3u /* tested RMB state is UP, else DOWN */
+#define RPBM_CONFB_SET_MODE 4u /* force initial display mode (ECS+) */
+#define RPBM_CONFB_MODE_PAL 5u /* the forced mode is PAL, else NTSC */
+#define RPBM_CONFF_LMB_TEST (1u << RPBM_CONFB_LMB_TEST)
+#define RPBM_CONFF_LMB_ISUP (1u << RPBM_CONFB_LMB_ISUP)
+#define RPBM_CONFF_RMB_TEST (1u << RPBM_CONFB_RMB_TEST)
+#define RPBM_CONFF_RMB_ISUP (1u << RPBM_CONFB_RMB_ISUP)
+#define RPBM_CONFF_SET_MODE (1u << RPBM_CONFB_SET_MODE)
+#define RPBM_CONFF_MODE_PAL (1u << RPBM_CONFB_MODE_PAL)
+
+/******************************************************************************
  *
- *	RPBM_CMDID_SLOT_TO_KICK
+ *	RPBM_CMDID_SLOT_TO_KICK (2)
  *	param: <slot_number> (0 = firmware/config)
  *
  * The firmware copies a slot from Flash storage into Kickstart SRAM memory.
  * - firmware sets struct FirmwareInfo.KickSlot = <slot_number>
  */
-#define RPBM_FIRMWARE_TO_KICK 0u /* including config storage (BootSlot) */
+#define RPBM_CMDID_SLOT_TO_KICK (0x2u << RPBM_FWWORD_CMDID_BASE)
 
-/*****************************************************************************
+/******************************************************************************
  *
- *	RPBM_CMDID_FIRMWAREINFO
+ *	RPBM_CMDID_FIRMWAREINFO (3)
  *	param: reserved (0)
  *
- * The firmware writes a FirmwareInfo struct into the buffer page.
+ * The firmware writes a struct FirmwareInfo into the buffer page.
  */
-#define RPBM_FIRMWAREINFO_PARAM 0u
+#define RPBM_CMDID_FIRMWAREINFO (0x3u << RPBM_FWWORD_CMDID_BASE)
+
 struct FirmwareInfo { /* TODO: move this into protocol header */
-  	uint32_t Magic;    /* 00: RPFW_FIRMWAREINFO_MAGIC */
+  	/* struct StatusV1, but BootSlot != active (KickSlot) */
+  	uint8_t  Magic[4]; /* 00: RPFW_FIRMWAREINFO_MAGIC */
   	uint8_t  InfoSize; /* 04: sizeof FirmwareInfo & 0xFF (0 = 256) */
   	uint8_t  FwMajor;  /* 05: firmware major version (0 = develop) */
   	uint8_t  FwMinor;  /* 06: firmware minor version */
   	uint8_t  FwPatch;  /* 07: firmware patch version */
   	uint8_t  FlashMB;  /* 08: Flash size in MB (4MB = 7 slots) */
   	uint8_t  BootSlot; /* 09: default boot slot from stored config */
-  	uint16_t BootConf; /* 0A: see struct BootMenuInfo.BootConf */
-  	uint8_t  KickSlot; /* 0C: slot loaded in Kickstart SRAM memory */
-  	uint8_t  WorkSlot; /* 0D: current Flash slot (page read/write) */
+  	/* new to StatusV2 */
+  	uint8_t  KickSlot; /* 0A: slot loaded in Kickstart SRAM memory */
+  	uint8_t  WorkSlot; /* 0B: current Flash slot (page read/write) */
+  	uint16_t BootConf; /* 0C: see struct BootMenuInfo.BootConf */
   	uint8_t  reserved; /* 0E: reserved/alignment (zero) */
   	uint8_t  BoardRev; /* 0F: RPROM hardware revision */
 };	                   /* 10: sizeof FirmwareInfo */
-#define RPFW_FIRMWAREINFO_MAGIC 'RPRM'
+
+/* struct FirmwareInfo.Magic */
+#define RPFW_FIRMWAREINFO_MAGIC "RPRM"
 
 #endif /* RPROM_FIRMWARE_BOOTMENU_H */
