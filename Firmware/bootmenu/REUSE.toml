@@ -2,8 +2,10 @@ version = 1
 
 [[annotations]]
 path = [
+ "Makefile",
  "Mockup.png",
  "README.md",
+ "bootmenu.asm",
  "bootmenu.h",
  "bootmenu.i",
  "images/cursor.png",
@@ -21,6 +23,9 @@ path = [
  "research/hposdump-c520.zip",
  "research/hposdump-pal-lores-c520.png",
  "research/hposdump-pal-lores-wuae.png",
+ "testmenu.asm",
+ "testmenu.fs-uae",
+ "testmenu.uae",
  ".gitignore"
 ]
 SPDX-FileCopyrightText = "2026 Nico Bendlin <nico@nicode.net>"
