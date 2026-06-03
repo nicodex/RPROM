@@ -48,15 +48,15 @@ RPBM_FWSTATUSF_FAIL	EQU 	(1<<RPBM_FWSTATUSB_FAIL)
 ;
 ; RPROM firmware bootmenu command/data word format:
 ;
-;	| data | VALUE                           | ROM address access range |
+;	| DATA | VALUE:16                        | ROM address access range |
 ;	| ---: | :------------------------------ | -----------------------: |
-;	| `=1` | `%FEDCBA9876543210`             |       ($020000, $03FFFE) |
+;	| `=1` | `%FEDCBA9876543210`             | 128-256K (020000,03FFFE) |
 ;
-;	| data | func |   CMDID | PARAM          | ROM address access range |
+;	| DATA | FUNC | CMDID:4 | PARAM:11       | ROM address access range |
 ;	| ---: | :--- |-------: | :------------- | -----------------------: |
-;	| `=0` | `=1` | `%EDCB` | `%A9876543210` |       ($010000, $01FFFE) |
+;	| `=0` | `=1` | `%EDCB` | `%A9876543210` |  64-128K (010000,01FFFE) |
 ;
-; NOTE: Only 17 bits (128K words), due to F0 address decoder /ROMEN.
+; NOTE: Only 17 bits (128K words), due to F0 ROM address decoder limits.
 ;
 RPBM_FWWORD_BITS	EQU 	17 ; 18-RPBM_ADDR_SHIFT
 RPBM_FWWORD_MASK	EQU 	((1<<RPBM_FWWORD_BITS)-1)
@@ -77,7 +77,7 @@ RPBM_FWWORD_PARAM_MASK	EQU 	((1<<RPBM_FWWORD_PARAM_BITS)-1)
 ;------------------------------------------------------------------------------
 ;
 ;	RPBM_CMDID_JUMP_TO_KICK (0)
-;	param: reserved (0)
+;	PARAM: reserved (0)
 ;
 ; The firmware exits bootmenu mode and switches to Kickstart SRAM memory.
 ; Point of no return -- the bootmenu is responsible to setup/prepare the
@@ -89,7 +89,7 @@ RPBM_CMDID_JUMP_TO_KICK	EQU 	($0<<RPBM_FWWORD_CMDID_BASE)
 ;------------------------------------------------------------------------------
 ;
 ;	RPBM_CMDID_BOOTMENUINFO (1)
-;	param: reserved (0)
+;	PARAM: reserved (0)
 ;
 ; The firmware writes a BootMenuInfo struct into the buffer page.
 ; - firmware automatically executes this command after loading
@@ -126,7 +126,7 @@ RPBM_CONFF_MODE_PAL	EQU 	(1<<RPBM_CONFB_MODE_PAL)
 ;------------------------------------------------------------------------------
 ;
 ;	RPBM_CMDID_SLOT_TO_KICK (2)
-;	param: <slot_number> (0 = firmware/config)
+;	PARAM: <slot_number> (0 = firmware/config)
 ;
 ; The firmware copies a slot from Flash storage into Kickstart SRAM memory.
 ; - firmware sets  rpfwi_KickSlot = <slot_number>
@@ -137,28 +137,24 @@ RPBM_FIRMWARE_TO_KICK	EQU 	0 ; including config storage (BootSlot)
 ;------------------------------------------------------------------------------
 ;
 ;	RPBM_CMDID_FIRMWAREINFO (3)
-;	param: reserved (0)
+;	PARAM: reserved (0)
 ;
 ; The firmware writes a struct FirmwareInfo into the buffer page.
 ;
 RPBM_CMDID_FIRMWAREINFO	EQU 	($3<<RPBM_FWWORD_CMDID_BASE)
 
 ; struct FirmwareInfo ;TODO: move this into protocol header
-; struct StatusV1, but BootSlot != active (KickSlot)
 rpfwi_Magic     	EQU 	$00 ;<.l> RPFW_FIRMWAREINFO_MAGIC
-rpfwi_InfoSize  	EQU 	$04 ;<.b> rpfwi_SIZEOF (0 = 256)
+rpfwi_InfoSize  	EQU 	$04 ;<.b> rpfwi_SIZEOF & $FF (0 = 256)
 rpfwi_FwMajor   	EQU 	$05 ;<.b> firmware major version (0 = develop)
 rpfwi_FwMinor   	EQU 	$06 ;<.b> firmware minor version
 rpfwi_FwPatch   	EQU 	$07 ;<.b> firmware patch version
-rpfwi_FlashMB   	EQU 	$08 ;<.b> Flash size in MB (4MB = 7 slots)
-rpfwi_BootSlot  	EQU 	$09 ;<.b> default boot slot from stored config
-; new to StatusV2
-rpfwi_KickSlot  	EQU 	$0A ;<.b> slot loaded in Kickstart SRAM memory
-rpfwi_WorkSlot  	EQU 	$0B ;<.b> current Flash slot (page read/write)
+rpfwi_BoardRev  	EQU 	$08 ;<.b> RPROM hardware revision
+rpfwi_FlashMB   	EQU 	$09 ;<.b> Flash size in MB (4MB = 7 slots)
+rpfwi_BootSlot  	EQU 	$0A ;<.b> default boot slot from stored config
+rpfwi_KickSlot  	EQU 	$0B ;<.b> slot loaded in Kickstart SRAM memory
 rpfwi_BootConf  	EQU 	$0C ;<.w> see rpbmi_BootConf
-rpfwi_reserved  	EQU 	$0E ;<.b> reserved/alignment (zero)
-rpfwi_BoardRev  	EQU 	$0F ;<.b> RPROM hardware revision
-rpfwi_SIZEOF    	EQU 	$10&$FF
+rpfwi_SIZEOF    	EQU 	$0E
 
 ; rpfwi_Magic
 RPFW_FIRMWAREINFO_MAGIC	EQU 	'RPRM'
