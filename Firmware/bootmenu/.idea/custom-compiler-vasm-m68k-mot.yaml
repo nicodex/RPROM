@@ -1,0 +1,4 @@
+compilers:
+  - description: VASM CPU=m68k SYNTAX=mot
+    match-sources: ".*\\.(S|asm|i|inc)"
+    match-compiler-exe: "(.*/)?vasmm68k_mot(.exe)?"
