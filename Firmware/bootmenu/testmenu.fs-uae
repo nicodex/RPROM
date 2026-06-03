@@ -1,9 +1,10 @@
 #!/usr/bin/env fs-uae
 
 [fs-uae]
-amiga_model = A600
+amiga_model = CDTV
 governor_warning = 0
-kickstart_file = $CONFIG/testmenu.rom
+kickstart_ext_file = $CONFIG/testmenu.rom
+kickstart_file = $CONFIG/winuae/amiga-os-310-a600.rom
 save_states = 0
 save_states_dir = $CONFIG/
 screenshots_output_dir = $CONFIG/
@@ -11,4 +12,3 @@ screenshots_output_mask = 2
 screenshots_output_prefix = testmenu
 sub_title = testmenu
 title = RPROM bootmenu
-zoom = 640x512

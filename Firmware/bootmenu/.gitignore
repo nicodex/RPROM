@@ -1,11 +1,13 @@
 /*
 !/.gitignore
+!/.idea/custom-compiler*
 !/*.asm
 !/*.fs-uae
 !/*.h
 !/*.i
 !/*.md
 !/*.png
+!/*.uae
 !/LICENSES/
 !/Makefile
 !/REUSE.toml
