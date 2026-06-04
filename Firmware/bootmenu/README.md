@@ -7,8 +7,8 @@ and still in development (including firmware interface changes).
 The basic idea is to provide an interactive graphical user interface
 where the user selects the Kickstart slot to be loaded and executed.
 
-Right now, it looks something like this (without PAL letter-boxing):  
-![RPROM bootmenu mockup screen](Mockup.png)
+Right now, it looks something like this:  
+![RPROM bootmenu animated PNG](bootmenu.png)
 
 Requirements besides RPROM (16-bit/single-ROM system):
   - any MC680x0 with at least 7MHz
@@ -26,6 +26,12 @@ and writing into any CIA-A register will deassert `/OVL` on Gayle-based systems)
 Additional features:
   - NTSC/PAL switch (on boot or in menu)
   - `F0` ROM support (CD-ROM drive A570)
+
+Note: The NTSC/PAL auto/menu switch might look promising for users
+  with a NTSC Agnus that want to start in PAL mode by default, but
+  most later Kickstarts do not detect the currently active display
+  mode (just using the default flag) - however, it might be useful
+  for custom ROMs (that's why I added it :-)) or older Kickstarts.
 
 Note: Support for `F0` ROM emulation requires a modification to the
   RPROM's general firmware interface, since the address decoders in

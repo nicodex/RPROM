@@ -3,11 +3,11 @@ version = 1
 [[annotations]]
 path = [
  "Makefile",
- "Mockup.png",
  "README.md",
  "bootmenu.asm",
  "bootmenu.h",
  "bootmenu.i",
+ "bootmenu.png",
  "images/cursor.png",
  "images/cursor.py",
  "images/header.png",
@@ -26,7 +26,9 @@ path = [
  "testmenu.asm",
  "testmenu.fs-uae",
  "testmenu.uae",
- ".gitignore"
+ ".gitignore",
+ ".idea/custom-compiler.xml",
+ ".idea/custom-compiler-vasm-m68k-mot.yaml"
 ]
 SPDX-FileCopyrightText = "2026 Nico Bendlin <nico@nicode.net>"
 SPDX-License-Identifier = "0BSD"
