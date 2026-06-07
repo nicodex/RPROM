@@ -1081,14 +1081,14 @@ ROM_OVERFLOW	EQU	-ROM_FREE
 	PRINTT	'bootmenu.asm: ROM data bytes = \<ROM_DATA_SIZE>'
 	PRINTT	'bootmenu.asm: ROM free bytes = -\<ROM_OVERFLOW>'
 	PRINTT	'bootmenu.asm: ROM footer bytes = \<ROM_FOOT>'
-	ENDC
 	PRINTT	"[ humor, seventy-five percent ]"
+	ENDC
 	FAIL	'bootmenu.asm: ROM size overflow'
        	ENDM
 	ENDC
 		RomInfo
 
-		dc.l   	$0906FDFD ; Kickstart ROM csum
+		dc.l   	$66EBA018 ; Kickstart ROM csum
 		dc.l   	$00080000 ; Kickstart ROM size (512K)
 		; only the odd octets are read/used by the MC68000
 		dc.b   	0,24 ; VEC_SPUR

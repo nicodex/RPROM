@@ -96,5 +96,5 @@ for y, r in enumerate(data):
 
 with open(ASM_FILENAME, 'w', encoding='ascii') as file:
   file.write(code)
-print(f'{ASM_FILENAME:s}: generated from {IMG_FILENAME:s}')
+print(f'{ASM_FILENAME:s}: generated from {IMG_FILENAME:s} for {VERSION}')
 
