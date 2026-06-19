@@ -11,7 +11,7 @@ WINE_PWD ?= $(if $(WINE:=),$(shell $(WINE) START /D "$(shell pwd)" /WAIT /B CMD 
 WINUAE_ZIP ?= WinUAE6030.zip
 WINUAE_URL ?= https://download.abime.net/winuae/releases/$(WINUAE_ZIP)
 
-all: bootmenu.rom
+all: bootmenu.bin
 
 .PHONY: all check \
 	clean distclean \
@@ -31,7 +31,7 @@ check: bootmenu.rom
 	$(ROMTOOL) info $<
 
 clean:
-	rm -f bootmenu.lst bootmenu.rom
+	rm -f bootmenu.lst bootmenu.rom bootmenu.bin
 	rm -f $(IMAGES)
 	rm -f testmenu.bin testmenu.rom
 
@@ -44,6 +44,9 @@ images/%.i: images/%.png images/%.py
 bootmenu.rom: bootmenu.asm $(IMAGES) bootmenu.i Makefile
 	$(VASM) $(VASM_OPTS) -L $(@:.rom=.lst) -Lbpl=10 -Lni -Lns -o $@ $< && \
 	$(ROMTOOL) copy --fix-checksum $@ $@
+
+bootmenu.bin: bootmenu.rom
+	dd if=$< of=$@ bs=2 conv=swab
 
 testmenu.bin: bootmenu.asm $(IMAGES) bootmenu.i Makefile
 	$(VASM) $(VASM_OPTS) -DTESTMENU -o $@ $<
