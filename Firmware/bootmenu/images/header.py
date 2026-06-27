@@ -8,7 +8,7 @@ from sprite import ocs_to_rgb, load_image
 
 ASM_FILENAME = 'header.i'
 IMG_FILENAME = 'header.png'
-VER_FILENAME = '../../Firmware/cmake-build-release/generated/firmware/version.i'
+VER_FILENAME = ''
 if __name__ == '__main__':
   if len(sys.argv) > 1:
     ASM_FILENAME = sys.argv[1]
@@ -49,44 +49,63 @@ def get_fw_version():
             v[i] = int(m[1])
   return tuple(v)
 
-VERSION = get_fw_version()
-RELEASE = (VERSION[0] > 0) and (VERSION[1] >= 0)
-_ = -1
-C = 3 if RELEASE else 2
-X, Y = 38, 8
-blt_data_tuple(X + 0, Y + 3, (
-  (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _),
-  (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _),
-  (_, C, C, _, C, C, C, _, C, C, _, C, C, C, _, C, C, C, C, C, _),
-  (_, C, _, _, C, _, C, _, C, _, _, C, _, C, _, C, _, C, _, C, _),
-  (_, C, _, _, C, C, C, _, C, _, _, C, C, C, _, C, _, C, _, C, _),
-  (_, _, _, _, C, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
-  ) if RELEASE else ( # 'rprom' / 'custom'
-  (_, _, _, _, _, _, _, _, _, _, C, _, _, _, _, _, _, _, _, _, _),
-  (_, _, _, _, _, _, _, _, _, _, C, C, _, _, _, _, _, _, _, _, _),
-  (_, C, C, _, C, _, C, _, C, C, C, _, C, C, C, C, C, C, C, C, _),
-  (_, C, _, _, C, _, C, _, C, _, C, _, C, _, C, C, _, C, _, C, _),
-  (_, C, C, C, C, C, C, C, C, _, C, C, C, C, C, C, _, C, _, C, _),
-  (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)))
-DIGITS = (
-  ((C, C, C), (C, _, C), (C, _, C), (C, _, C), (C, C, C)), # 0
-  ((_, C, _), (C, C, _), (_, C, _), (_, C, _), (C, C, C)), # 1
-  ((C, C, C), (_, _, C), (C, C, C), (C, _, _), (C, C, C)), # 2
-  ((C, C, C), (_, _, C), (C, C, C), (_, _, C), (C, C, C)), # 3
-  ((C, _, C), (C, _, C), (C, C, C), (_, _, C), (_, _, C)), # 4
-  ((C, C, C), (C, _, _), (C, C, C), (_, _, C), (C, C, C)), # 5
-  ((C, C, C), (C, _, _), (C, C, C), (C, _, C), (C, C, C)), # 6
-  ((C, C, C), (_, _, C), (_, _, C), (_, _, C), (_, _, C)), # 7
-  ((C, C, C), (C, _, C), (C, C, C), (C, _, C), (C, C, C)), # 8
-  ((C, C, C), (C, _, C), (C, C, C), (_, _, C), (C, C, C)), # 9
-  ((C, C, C), (C, _, C), (_, _, C), (_, C, _), (_, _, _), (_, C, _))) # ?
-digit = lambda n : DIGITS[-1] if not 0 <= n < len(DIGITS) else DIGITS[n]
-#TODO: add support for version numbers > 9
-blt_data_tuple(X +  3, Y + 12, digit(VERSION[0]))
-set_data_pixel(X +  7, Y + 16, C)
-blt_data_tuple(X +  9, Y + 12, digit(VERSION[1]))
-set_data_pixel(X + 13, Y + 16, C)
-blt_data_tuple(X + 15, Y + 12, digit(VERSION[2]))
+version = get_fw_version()
+if version == (-1, -1, -1):
+  print(f'{ASM_FILENAME:s}: no firmware version information found')
+else:
+  release = (version[0] > 0) and (version[1] >= 0)
+  _ = -1
+  C = 3 if release else 2
+  X, Y = 38, 8
+  blt_data_tuple(X + 0, Y + 3, (
+    (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _),
+    (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _),
+    (_, C, C, _, C, C, C, _, C, C, _, C, C, C, _, C, C, C, C, C, _),
+    (_, C, _, _, C, _, C, _, C, _, _, C, _, C, _, C, _, C, _, C, _),
+    (_, C, _, _, C, C, C, _, C, _, _, C, C, C, _, C, _, C, _, C, _),
+    (_, _, _, _, C, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
+    ) if release else ( # 'rprom' / 'custom'
+    (_, _, _, _, _, _, _, _, _, _, C, _, _, _, _, _, _, _, _, _, _),
+    (_, _, _, _, _, _, _, _, _, _, C, C, _, _, _, _, _, _, _, _, _),
+    (_, C, C, _, C, _, C, _, C, C, C, _, C, C, C, C, C, C, C, C, _),
+    (_, C, _, _, C, _, C, _, C, _, C, _, C, _, C, C, _, C, _, C, _),
+    (_, C, C, C, C, C, C, C, C, _, C, C, C, C, C, C, _, C, _, C, _),
+    (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)))
+  DIGITS = (
+    ((C, C, C), (C, _, C), (C, _, C), (C, _, C), (C, C, C)), # 0
+    ((_, C, _), (C, C, _), (_, C, _), (_, C, _), (C, C, C)), # 1
+    ((C, C, C), (_, _, C), (C, C, C), (C, _, _), (C, C, C)), # 2
+    ((C, C, C), (_, _, C), (C, C, C), (_, _, C), (C, C, C)), # 3
+    ((C, _, C), (C, _, C), (C, C, C), (_, _, C), (_, _, C)), # 4
+    ((C, C, C), (C, _, _), (C, C, C), (_, _, C), (C, C, C)), # 5
+    ((C, C, C), (C, _, _), (C, C, C), (C, _, C), (C, C, C)), # 6
+    ((C, C, C), (_, _, C), (_, _, C), (_, _, C), (_, _, C)), # 7
+    ((C, C, C), (C, _, C), (C, C, C), (C, _, C), (C, C, C)), # 8
+    ((C, C, C), (C, _, C), (C, C, C), (_, _, C), (C, C, C)), # 9
+    ((_, C, _), (C, _, C), (_, _, C), (_, C, _), (_, _, _), (_, C, _))) # ?
+  digit = lambda n : DIGITS[-1] if not 0 <= n < len(DIGITS) else DIGITS[n]
+  # maximum string space in image "9.9.99" or "9.999" (if PATCH 0)
+  X += 6
+  Y += 12
+  def blt_digit(n):
+    global X; d = []
+    while n >= 10:
+      d.insert(0, n % 10); n //= 10
+    d.insert(0, n if n < 0 else n % 10)
+    for i in d:
+      blt_data_tuple(X, Y, digit(i)); X += 4
+  for n in version:
+    while n >= 10:
+      n //= 10
+      X -= 4 // 2
+  if version[2]:
+    X -= (4 + 2) // 2
+  blt_digit(version[0] if release else -1)
+  set_data_pixel(X, Y + 4, C); X += 2
+  blt_digit(version[1])
+  if version[2]:
+    set_data_pixel(X, Y + 4, C); X += 2
+    blt_digit(version[2])
 
 code = ''
 for y, r in enumerate(data):
@@ -96,5 +115,5 @@ for y, r in enumerate(data):
 
 with open(ASM_FILENAME, 'w', encoding='ascii') as file:
   file.write(code)
-print(f'{ASM_FILENAME:s}: generated from {IMG_FILENAME:s} for {VERSION}')
+print(f'{ASM_FILENAME:s}: generated from {IMG_FILENAME:s} for {version}')
 

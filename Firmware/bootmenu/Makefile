@@ -4,6 +4,8 @@ VASM ?= $(VBCC)/bin/vasmm68k_mot
 VASM_OPTS ?= -Fbin -pic -quiet -wfail -x
 PYTHON ?= /usr/bin/env python3
 ROMTOOL ?= /usr/bin/env romtool
+CMAKE_BINDIR ?= ../../Firmware/cmake-build-release
+VER_FILENAME ?= $(CMAKE_BINDIR)/generated/firmware/version.i
 UAE_DBG ?= false
 FSUAE ?= /usr/bin/env fs-uae
 WINE ?= /usr/bin/env WINEDEBUG=-all wine
@@ -38,8 +40,9 @@ clean:
 distclean: clean
 	rm -rf winuae
 
+images/header.i: $(VER_FILENAME)
 images/%.i: images/%.png images/%.py
-	$(PYTHON) $(@:.i=.py) $@ $<
+	$(PYTHON) $(@:.i=.py) $@ $< $(VER_FILENAME)
 
 bootmenu.rom: bootmenu.asm $(IMAGES) bootmenu.i Makefile
 	$(VASM) $(VASM_OPTS) -L $(@:.rom=.lst) -Lbpl=10 -Lni -Lns -o $@ $< && \

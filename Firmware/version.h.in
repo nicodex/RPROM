@@ -4,10 +4,6 @@
 #define RPROM_FIRMWARE_VERSION_MAJOR @rprom_firmware_VERSION_MAJOR@
 #define RPROM_FIRMWARE_VERSION_MINOR @rprom_firmware_VERSION_MINOR@
 #define RPROM_FIRMWARE_VERSION_PATCH @rprom_firmware_VERSION_PATCH@
-#if (RPROM_FIRMWARE_VERSION_MAJOR > 0)
 #define RPROM_FIRMWARE_VERSION "@rprom_firmware_VERSION@"
-#else
-#define RPROM_FIRMWARE_VERSION "?.?.?"
-#endif
 
 #endif
