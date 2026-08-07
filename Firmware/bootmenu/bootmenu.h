@@ -38,14 +38,23 @@
 #define RPBM_FWBUFFER_WORD (RPBM_FWBUFFER_ADDR >> RPBM_ADDR_SHIFT)
 #define RPBM_FWBUFFER_SIZE RPBM_PAGE_SIZE
 
-/* RPROM firmware command/data transfer status (volatile) */
+/*
+ * RPROM firmware command/data transfer status (volatile)
+ */
 #define RPBM_FWSTATUS_ADDR 0x000200u /* VEC_USER[64] */
 #define RPBM_FWSTATUS_WORD (RPBM_FWSTATUS_ADDR >> RPBM_ADDR_SHIFT)
-#define RPBM_FWSTATUSB_BUSY (7u+24u) /* DQ7 */
-#define RPBM_FWSTATUSF_BUSY (1u << RPBM_FWSTATUSB_BUSY)
-#define RPBM_FWSTATUSB_FAIL (5u+24u) /* DQ5 */
-#define RPBM_FWSTATUSF_FAIL (1u << RPBM_FWSTATUSB_FAIL)
-/* TODO: low word contains current command/param pair */
+
+struct FirmwareStatus { /* TODO: move this into protocol header */
+  	uint8_t  Flags; /* 00: BUSY/FAIL flags */
+  	uint8_t  State; /* 01: reserved (busy bytes / fail errno) */
+  	uint16_t FwCmd; /* 02: current/last RPBM_CMD_* with PARAM */
+};	                /* 04: sizeof FirmwareStatus */
+
+/* struct FirmwareStatus.Flags */
+#define RPFW_STATUSB_BUSY 7u
+#define RPFW_STATUSF_BUSY (1u << RPFW_STATUSB_BUSY)
+#define RPFW_STATUSB_FAIL 5u
+#define RPFW_STATUSF_FAIL (1u << RPFW_STATUSB_FAIL)
 
 /*
  * RPROM firmware bootmenu command/data word format:
@@ -87,6 +96,7 @@
  * Kickstart (jump has to be run from the CPU instruction prefetch queue).
  */
 #define RPBM_CMDID_JUMP_TO_KICK (0x0u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMD_JUMP_TO_KICK (RPBM_FWWORDF_FUNC | RPBM_CMDID_JUMP_TO_KICK)
 
 /******************************************************************************
  *
@@ -97,6 +107,7 @@
  * - firmware automatically executes this command after loading
  */
 #define RPBM_CMDID_BOOTMENUINFO (0x1u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMD_BOOTMENUINFO (RPBM_FWWORDF_FUNC | RPBM_CMDID_BOOTMENUINFO)
 
 struct BootMenuSlotInfo {
   	uint32_t ResetPC; /* 00: VEC_RESETPC (1) */
@@ -134,6 +145,8 @@ struct BootMenuInfo {
  * - firmware sets struct FirmwareInfo.KickSlot = <slot_number>
  */
 #define RPBM_CMDID_SLOT_TO_KICK (0x2u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMD_SLOT_TO_KICK (RPBM_FWWORDF_FUNC | RPBM_CMDID_SLOT_TO_KICK)
+#define RPBM_FIRMWARE_TO_KICK 0 /* including config storage (BootSlot) */
 
 /******************************************************************************
  *
@@ -143,6 +156,7 @@ struct BootMenuInfo {
  * The firmware writes a struct FirmwareInfo into the buffer page.
  */
 #define RPBM_CMDID_FIRMWAREINFO (0x3u << RPBM_FWWORD_CMDID_BASE)
+#define RPBM_CMD_FIRMWAREINFO (RPBM_FWWORDF_FUNC | RPBM_CMDID_FIRMWAREINFO)
 
 struct FirmwareInfo { /* TODO: move this into protocol header */
   	uint8_t  Magic[4]; /* 00: RPFW_FIRMWAREINFO_MAGIC */

@@ -36,14 +36,23 @@ RPBM_FWBUFFER_ADDR	EQU 	$000100 ; VEC_USER[0-63]
 RPBM_FWBUFFER_WORD	EQU 	(RPBM_FWBUFFER_ADDR>>RPBM_ADDR_SHIFT)
 RPBM_FWBUFFER_SIZE	EQU 	RPBM_PAGE_SIZE
 
+;
 ; RPROM firmware command/data transfer status (volatile)
+;
 RPBM_FWSTATUS_ADDR	EQU 	$000200 ; VEC_USER[64]
 RPBM_FWSTATUS_WORD	EQU 	(RPBM_FWSTATUS_ADDR>>RPBM_ADDR_SHIFT)
-RPBM_FWSTATUSB_BUSY	EQU 	7+24 ; DQ7
-RPBM_FWSTATUSF_BUSY	EQU 	(1<<RPBM_FWSTATUSB_BUSY)
-RPBM_FWSTATUSB_FAIL	EQU 	5+24 ; DQ5
-RPBM_FWSTATUSF_FAIL	EQU 	(1<<RPBM_FWSTATUSB_FAIL)
-;TODO: low word contains current command/param pair
+
+; struct FirmwareStatus ;TODO: move this into protocol header
+rpfws_Flags 	EQU 	$00 ;<.b> BUSY/FAIL flags
+rpfws_State 	EQU 	$01 ;<.b> reserved (busy bytes / fail errno)
+rpfws_FwCmd 	EQU 	$02 ;<.w> current/last RPBM_CMD_* with PARAM
+rpfws_SIZEOF	EQU 	$04
+
+; rpfws_Flags
+RPFW_STATUSB_BUSY	EQU 	7
+RPFW_STATUSF_BUSY	EQU 	(1<<RPFW_STATUSB_BUSY)
+RPFW_STATUSB_FAIL	EQU 	5
+RPFW_STATUSF_FAIL	EQU 	(1<<RPFW_STATUSB_FAIL)
 
 ;
 ; RPROM firmware bootmenu command/data word format:
@@ -85,6 +94,7 @@ RPBM_FWWORD_PARAM_MASK	EQU 	((1<<RPBM_FWWORD_PARAM_BITS)-1)
 ; Kickstart (jump has to be run from the CPU instruction prefetch queue).
 ;
 RPBM_CMDID_JUMP_TO_KICK	EQU 	($0<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMD_JUMP_TO_KICK  	EQU 	(RPBM_FWWORDF_FUNC!RPBM_CMDID_JUMP_TO_KICK)
 
 ;------------------------------------------------------------------------------
 ;
@@ -95,6 +105,7 @@ RPBM_CMDID_JUMP_TO_KICK	EQU 	($0<<RPBM_FWWORD_CMDID_BASE)
 ; - firmware automatically executes this command after loading
 ;
 RPBM_CMDID_BOOTMENUINFO	EQU 	($1<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMD_BOOTMENUINFO  	EQU 	(RPBM_FWWORDF_FUNC!RPBM_CMDID_BOOTMENUINFO)
 
 ; struct BootMenuSlotInfo
 rpbmsi_ResetPC	EQU 	$00 ;<.l> VEC_RESETPC (1)
@@ -132,6 +143,7 @@ RPBM_CONFF_MODE_PAL	EQU 	(1<<RPBM_CONFB_MODE_PAL)
 ; - firmware sets  rpfwi_KickSlot = <slot_number>
 ;
 RPBM_CMDID_SLOT_TO_KICK	EQU 	($2<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMD_SLOT_TO_KICK  	EQU 	(RPBM_FWWORDF_FUNC!RPBM_CMDID_SLOT_TO_KICK)
 RPBM_FIRMWARE_TO_KICK	EQU 	0 ; including config storage (BootSlot)
 
 ;------------------------------------------------------------------------------
@@ -142,6 +154,7 @@ RPBM_FIRMWARE_TO_KICK	EQU 	0 ; including config storage (BootSlot)
 ; The firmware writes a struct FirmwareInfo into the buffer page.
 ;
 RPBM_CMDID_FIRMWAREINFO	EQU 	($3<<RPBM_FWWORD_CMDID_BASE)
+RPBM_CMD_FIRMWAREINFO  	EQU 	(RPBM_FWWORDF_FUNC!RPBM_CMDID_FIRMWAREINFO)
 
 ; struct FirmwareInfo ;TODO: move this into protocol header
 rpfwi_Magic     	EQU 	$00 ;<.l> RPFW_FIRMWAREINFO_MAGIC

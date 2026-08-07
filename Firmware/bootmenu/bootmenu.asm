@@ -19,6 +19,7 @@
 
 	INCLUDE bootmenu.i
 
+
 ;TODO: cleanup and much more comments
 
 BOOTMENU_SLOTS	EQU 	((1<<(22-19))-1) ; 4M/512K-1 = 7
@@ -297,11 +298,12 @@ RomBase:
 0$:		bra.w  	RomEntry
 	VecDef 	VecEntry,13,15 ; (VEC_COPROC,VEC_UNINT)
 ;	VecDef 	VEC_RESV,16,22
+VecEntry:
+		bra.w  	NmiEntry
 	FuncDef	SendCmdP ; <reg_D0.w=CMDID/PARAM>
 		ext.l  	reg_D0
 		ori.w  	#RPBM_FWWORDF_FUNC,reg_D0
 		movea.l	reg_D0,reg_A0
-		eori.w 	#RPBM_FWWORDF_FUNC,reg_D0
 	FuncDef	SendWord ; <reg_A0=FWWORD>
 		adda.l 	reg_A0,reg_A0 ; <<RPBM_ADDR_SHIFT
 		lea    	(RomBase,pc),reg_A1
@@ -318,12 +320,12 @@ FwMagic1:
 		dc.w   	DIAG_CART-1 ; CMDID/PARAM = 0 -> CCR %XNZVC = %_0000
 		dc.w   	'BM'
 	VecDef 	VecEntry,60,61 ; (VEC_UNIMPEA,VEC_UNIMPII)
-VecFrame:
+NmiFrame:
 ;	VecDef 	VEC_RESV,62,63
 		; return with fake NMI expection frame
 		dc.w   	$2700                                 ; ($0000,sp),SR
 		dc.w   	(KICK_BASE+2)>>16,$FFFF&(KICK_BASE+2) ; ($0002,sp),PC
-		dc.w   	(%0000<<12)!(4*31)                    ; ($0006,sp),F/V
+		dc.w   	(%0000<<12)!(31*4)                    ; ($0006,sp),F/V
 FwBuffer:
 ;	VecDef 	VEC_USER,0,63
 	NOLIST
@@ -365,17 +367,17 @@ FwStatus:
 		; bootmenu, but the status must be initialized so
 		; that we do not assume the command has already
 		; completed before it has actually been started.
-		dc.b   	(1<<(RPBM_FWSTATUSB_BUSY-24))
+		dc.b   	(1<<RPFW_STATUSB_BUSY)
 		dc.b   	0
-		dc.w   	RPBM_CMDID_BOOTMENUINFO!0
+		dc.w   	RPBM_CMD_BOOTMENUINFO!0
 	NOLIST
 	ELSE
 		; fake RPBM_CMDID_SLOT_TO_KICK sucess for TESTMENU
 		; so the bootmenu jumps to itself in a loop, until
 		; the mouse buttons are in the configured state...
-		dc.b   	0;(1<<(RPBM_FWSTATUSB_FAIL-24))
+		dc.b   	0;(1<<RPFW_STATUSB_FAIL)
 		dc.b   	0
-		dc.w   	RPBM_CMDID_SLOT_TO_KICK!TESTMENU_BSLOT
+		dc.w   	RPBM_CMD_SLOT_TO_KICK!TESTMENU_BSLOT
 	ENDC
 ChkAddr	MACRO  	; <offset>,<label>
 	IFNE	\1-(\2-RomBase)
@@ -386,15 +388,15 @@ ChkAddr	MACRO  	; <offset>,<label>
 	ChkAddr	RPBM_FWMAGIC1_ADDR,FwMagic1
 	ChkAddr	RPBM_FWBUFFER_ADDR,FwBuffer
 	ChkAddr	RPBM_FWSTATUS_ADDR,FwStatus
-	ChkAddr	RPBM_FWSTATUS_ADDR+4,*
+	ChkAddr	RPBM_FWSTATUS_ADDR+rpfws_SIZEOF,*
 	LIST
 ;	VecDef 	VEC_USER,65,78
-VecEntry:
+NmiEntry:
 	NOLIST
 	IFND	TESTMENU
 	LIST
 		; any exception will jump to KICK_BASE+2
-		lea    	(VecFrame,pc),sp
+		lea    	(NmiFrame,pc),sp
 		rte
 	NOLIST
 	ELSE
@@ -454,15 +456,15 @@ RomEntry:
 		jmp    	(2,reg_A0)
 RomStart:
 		move   	sp,usp ; (privileged instruction)
-		lea    	(FwStatus,pc),fw_status
+		lea    	(FwStatus+rpfws_Flags,pc),fw_status
 		CustomL
 		move.l 	#(INTF_ALL<<16)!INTF_ALL,(intena,custom) ; /intreq
 		move.w 	#DMAF_MASTER!DMAF_ALL,(dmacon,custom)
-	IFNE	RPBM_FWSTATUSB_BUSY-31
-3$:		btst.b 	#RPBM_FWSTATUSB_BUSY-24,(fw_status)
+	IFNE	RPFW_STATUSB_BUSY-7
+3$:		btst.b 	#RPFW_STATUSB_BUSY,(fw_status)
 		bne.b  	3$
 	ELSE
-3$:		tst.b 	(fw_status) ; RPBM_FWSTATUSB_BUSY
+3$:		tst.b 	(fw_status) ; RPFW_STATUSB_BUSY
 		bmi.b  	3$
 	ENDC
 InitMode:
@@ -530,16 +532,16 @@ AutoLoad:
 		move.w 	#RPBM_CMDID_SLOT_TO_KICK,reg_D0
 		move.b 	(rpbmi_BootSlot+FwBuffer,pc),reg_D0
 		CallF.w	SendCmdP,0$
-1$:		cmp.w  	(2,fw_status),reg_D0
+1$:		cmp.w  	(rpfws_FwCmd-rpfws_Flags,fw_status),reg_D0
 		bne.b  	1$
-	IFNE	RPBM_FWSTATUSB_BUSY-31
-2$:		btst.b 	#RPBM_FWSTATUSB_BUSY-24,(fw_status)
+	IFNE	RPFW_STATUSB_BUSY-7
+2$:		btst.b 	#RPFW_STATUSB_BUSY,(fw_status)
 		bne.b  	2$
 	ELSE
-2$:		tst.b  	(fw_status) ; RPBM_FWSTATUSB_BUSY
+2$:		tst.b  	(fw_status) ; RPFW_STATUSB_BUSY
 		bmi.b  	2$
 	ENDC
-		btst.b 	#RPBM_FWSTATUSB_FAIL-24,(fw_status)
+		btst.b 	#RPFW_STATUSB_FAIL,(fw_status)
 		beq.w  	JumpKick
 
 ;##############################################################################
@@ -666,7 +668,7 @@ CursPos:
 3$:		lea    	(CursData,pc),curs_dat
 	FuncLnk	FailTestEnd
 	FuncDef	FailTest
-		btst.b 	#RPBM_FWSTATUSB_FAIL-24,(fw_status)
+		btst.b 	#RPFW_STATUSB_FAIL,(fw_status)
 		beq.b  	0$
 		Color.w	0,#COL_FAILED
 		moveq  	#-1,menu_state ; dead end (BMSB_KICKLOAD w/o match)
@@ -681,14 +683,14 @@ LoadJmp:
 		bpl.b  	CursSel
 	ENDC
 		; wait for matching fwword (TESTMENU freeze !=TESTMENU_BSLOT)
-		cmp.w  	(2,fw_status),reg_D0
+		cmp.w  	(rpfws_FwCmd-rpfws_Flags,fw_status),reg_D0
 		bne.w  	HeadCol
 		; continue while firmware is still busy
-	IFNE	RPBM_FWSTATUSB_BUSY-31
-		btst.b 	#RPBM_FWSTATUSB_BUSY-24,(fw_status)
+	IFNE	RPFW_STATUSB_BUSY-7
+		btst.b 	#RPFW_STATUSB_BUSY,(fw_status)
 		bne.w  	HeadCol
 	ELSE
-		tst.b  	(fw_status) ; RPBM_FWSTATUSB_BUSY
+		tst.b  	(fw_status) ; RPFW_STATUSB_BUSY
 		bmi.w  	HeadCol
 	ENDC
 		CallF.b	FailTest,0$ ; does not return on failure
@@ -743,8 +745,8 @@ LmbTest:
 		bset.l 	#BMSB_KICKLOAD,menu_state
 		move.w 	#RPBM_CMDID_SLOT_TO_KICK,reg_D0
 		move.b 	menu_state,reg_D0
-		move.w 	reg_D0,menu_state
 		CallF.w	SendCmdP,1$
+		move.w 	reg_D0,menu_state
 	;	bra.b  	4$
 2$:		; display mode switch
 		cmpi.b 	#DISP_MODE_SLOT,menu_state
